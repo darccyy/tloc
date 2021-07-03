@@ -1,0 +1,23 @@
+{
+  "name": "tloc",
+  "version": "1.0.0",
+  "description": "The Language of Cringe. A terrible programming language created by me.",
+  "main": "index.js",
+  "scripts": {
+    "test": "node . test.tloc",
+    "start": "node . index.tloc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/darccyy/tloc.git"
+  },
+  "keywords": [
+    "tloc"
+  ],
+  "author": "darcy",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/darccyy/tloc/issues"
+  },
+  "homepage": "https://github.com/darccyy/tloc#readme"
+}
