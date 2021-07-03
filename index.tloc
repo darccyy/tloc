@@ -1,40 +1,5 @@
-set len ~14~;
-set amount ~100~;
-
-set index ~0~;
-label "start"; 
-
-set str "";
-set num ~0~;
-set digit ~0~;
-label "digit";
-
-rand;
-set 0 ~0~;
-set 0 ~1~ ? $$;
-
-op con $str $0;
-set str $$;
-
-op sub $len $digit;
-op sub $$ ~1~;
-
-op pow ~2~ $$;
-op mul $0 $$;
-
-op add $num $$;
-set num $$;
-
-op add $digit ~1~;
-set digit $$;
-go "digit" ? lt $digit $len;
-
-go "start" ? egt $num ~10000~;
-
-op div $num ~100~;
-print $$;
-
-op add $index ~1~;
-set index $$;
-halt ~0.2~;
-go "start" ? lt $index $amount;
+OP CON $$dir "\test.txt";
+SET file $$;
+PEN $file "abc\r\n123";
+SCAN $file;
+PRINT $$;

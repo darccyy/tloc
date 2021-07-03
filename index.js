@@ -6,7 +6,9 @@ var data, lines, vars, labels;
 async function main() {
   file = process.argv[2] || "index.tloc";
   lines = fs.readFileSync(path.join(__dirname, `${file}`)).toString().split(";");
-  vars = {};
+  vars = {
+    $dir: __dirname,
+  };
   labels = {};
 
   for (i = 3; i < process.argv.length; i++) {
@@ -34,22 +36,25 @@ async function main() {
     if (checkIf(lines[i])) {
       if (cmd) {
         cmd = cmd.toLowerCase();
-        // console.log(vars);
         switch (cmd) {
           case "print": {
             if (comps[1]) {
-              console.log(" >", getValue(comps[1]));
+              console.log(" >>", getValue(comps[1]));
             }
           }; break;
           case "set": {
             if (comps[1]) {
-              value = comps[2];
-              vars[comps[1]] = getValue(value);
+              if (comps[1][0] != "$") {
+                value = comps[2];
+                vars[comps[1]] = getValue(value);
+              } else {
+                console.log("ERR: Cannot create variable starting with '$'");
+              }
             }
           }; break;
           case "op": {
             if (comps[1] && comps[2]) {
-              if (["not"].includes(comps[1]) || comps[3]) {
+              if (["not", "bool"].includes(comps[1].toLowerCase()) || comps[3]) {
                 value = runOp(comps[1], getValue(comps[2]), getValue(comps[3]));
                 if (isNaN(value) && parseFloat(value) == value) {
                   value = null;
@@ -67,7 +72,7 @@ async function main() {
           case "go": {
             i = labels[getValue(comps[1])];
           }; break;
-          case "terminate": {
+          case "dissolve": {
             break I;
           }; break;
           case "halt": {
@@ -75,8 +80,18 @@ async function main() {
               await sleep(getValue(comps[1]));
             }
           }; break;
+          case "pen": {
+            if (comps[1]) {
+              fs.writeFileSync(getValue(comps[1]), getValue(comps[2]) || "");
+            }
+          }; break;
+          case "scan": {
+            if (comps[1]) {
+              returnValue(lines[i], fs.readFileSync(getValue(comps[1])).toString());
+            }
+          }; break;
           default: {
-            console.log(`ERR: Unknown command '${cmd}'`);
+            console.log(`ERR: Unknown command '${cmd.toUpperCase()}'`);
           };
         }
       }
@@ -104,9 +119,11 @@ function getValue(str) {
     if (Object.keys(vars).includes(str.substring(1, str.length))) {
       return vars[str.substring(1, str.length)];
     } else {
-      return null;
+      console.error(`ERR: Unknown variable '${str.substring(1, str.length)}'`);
+      return;
     }
   }
+  console.error(`ERR: Invalid data type '${str}'`);
 }
 
 function checkIf(line) {
@@ -124,7 +141,7 @@ function checkIf(line) {
 }
 
 function runOp(type, a, b) {
-  switch (type) {
+  switch (type.toLowerCase()) {
     case "add": return a + b;
     case "sub": return a - b;
     case "mul": return a * b;
@@ -151,12 +168,14 @@ function runOp(type, a, b) {
     case "nelt": return a > b;
     case "negt": return a < b;
     case "neq": return a !== b;
+
+    case "bool": return a === 1 ? 1 : 0;
   }
   return false;
 }
 
 function returnValue(line, value) {
-  key = line.split(">");
+  key = line.split(">>");
   if (key.length < 2) {
     key = "$";
   } else {
