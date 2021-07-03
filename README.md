@@ -20,13 +20,13 @@ A terrible programming language created by me.
 
 Basic string of characters.
 
-Marker: `"..."`
+Marker: `"..."` Eg. `"abc"`, `"Def 123"`
 
 ## Number
 
 Number. Includes integers and floats.
 
-Marker: `~...~`
+Marker: `.` Eg. `.12`, `.0.47`
 
 ## Boolean
 
@@ -163,7 +163,7 @@ RAND >> $var;
 
 ## LABEL
 
-Creates a label or marker to refer to by `GO` command.
+Creates a label or marker to refer to by `GO` command. All label commands are hoisted.
 
 ### Usage
 
@@ -173,7 +173,7 @@ LABEL name;
 
 ### Arguments
 
-`name`: Label name (string / number)
+`name`: Label name. Must be string. `"..."` string markers are unnecessary
 
 ## GO
 
@@ -187,7 +187,7 @@ GO name;
 
 ### Arguments
 
-`name`: Label name (string / number)
+`name`: Label name. Must be string. `"..."` string markers are unnecessary
 
 ## DISSOLVE
 
@@ -251,4 +251,14 @@ SCAN file >> var;
 
 `$$dir`: Directory of runner file (`index.js`) **NOT** Tloc file (`index.tloc`)
 
-`$$` Temporary variable. Default variable to return from command
+`$$`: Temporary variable. Default variable to return from command
+
+`$0`, `$1`, ect. Integer variables: Arguments used in initial run command.
+
+ - Eg.
+ - `node index index.tloc abc 123` <!-- Add npm support -->
+ - `$0` = `"abc"`, `$1` = `123`
+
+# Other
+
+Comments: Line comments only. Use by adding `::` to the start of the line.

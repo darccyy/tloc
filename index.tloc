@@ -1,5 +1,1 @@
-OP CON $$dir "\test.txt";
-SET file $$;
-PEN $file "abc\r\n123";
-SCAN $file;
-PRINT $$;
+PRINT "Edit_index.tloc!";

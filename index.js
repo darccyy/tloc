@@ -1,18 +1,41 @@
 const fs = require("fs");
 const path = require("path");
 
-var data, lines, vars, labels;
+var data, lines, vars, pVars, labels;
 
 async function main() {
   file = process.argv[2] || "index.tloc";
   lines = fs.readFileSync(path.join(__dirname, `${file}`)).toString().split(";");
-  vars = {
-    $dir: __dirname,
+  vars = {};
+  pVars = {
+    dir: __dirname,
   };
   labels = {};
 
   for (i = 3; i < process.argv.length; i++) {
-    vars["$" + (i - 3)] = getValue(process.argv[i]);
+    pVars["$" + (i - 3)] = getValue(process.argv[i]);
+  }
+
+  I: for (i = 0; i < lines.length; i++) {
+    lines[i] = lines[i].split("\r\n");
+    temp = [];
+    for (j = 0; j < lines[i].length; j++) {
+      if (lines[i][j]) {
+        temp.push(lines[i][j]);
+      }
+    }
+    lines[i] = temp.join("");
+    comps = lines[i].split(" ");
+    cmd = comps[0];
+    if (!cmd) {
+      cmd = comps[1];
+    }
+    if (cmd) {
+      cmd = cmd.toLowerCase();
+      if (cmd === "label") {
+        labels[comps[1]] = i;
+      }
+    }
   }
 
   I: for (i = 0; i < lines.length; i++) {
@@ -54,7 +77,7 @@ async function main() {
           }; break;
           case "op": {
             if (comps[1] && comps[2]) {
-              if (["not", "bool"].includes(comps[1].toLowerCase()) || comps[3]) {
+              if (["not", "bool", "roun", "flor", "ceil"].includes(comps[1].toLowerCase()) || comps[3]) {
                 value = runOp(comps[1], getValue(comps[2]), getValue(comps[3]));
                 if (isNaN(value) && parseFloat(value) == value) {
                   value = null;
@@ -66,12 +89,10 @@ async function main() {
           case "rand": {
             returnValue(lines[i], Math.random() >= 0.5);
           }; break;
-          case "label": {
-            labels[getValue(comps[1])] = i;
-          }; break;
           case "go": {
-            i = labels[getValue(comps[1])];
+            i = labels[comps[1]];
           }; break;
+          case "label": break;
           case "dissolve": {
             break I;
           }; break;
@@ -109,13 +130,21 @@ function getValue(str) {
   if (Object.keys(vals).includes(str)) {
     return vals[str];
   }
-  if (str[0] == '"' && str[str.length - 1] == '"') {
+  if (str.startsWith("\"") && str.endsWith("\"")) {
     return str.substring(1, str.length - 1);
   }
-  if (str[0] == "~" && str[str.length - 1] == "~") {
-    return parseFloat(str.substring(1, str.length - 1));
+  if (str.startsWith(".")) {
+    return parseFloat(str.substring(1, str.length));
   }
-  if (str[0] == "$") {
+  if (str.startsWith("$$")) {
+    if (Object.keys(pVars).includes(str.substring(1, str.length))) {
+      return pVars[str.substring(1, str.length)];
+    } else {
+      console.error(`ERR: Unknown process variable '${str.substring(1, str.length)}'`);
+      return;
+    }
+  }
+  if (str.startsWith("$")) {
     if (Object.keys(vars).includes(str.substring(1, str.length))) {
       return vars[str.substring(1, str.length)];
     } else {
@@ -123,7 +152,7 @@ function getValue(str) {
       return;
     }
   }
-  console.error(`ERR: Invalid data type '${str}'`);
+  return false;
 }
 
 function checkIf(line) {
@@ -132,12 +161,19 @@ function checkIf(line) {
     return true;
   }
   comps1 = comps1[comps1.length - 1].split(" ");
-  a = getValue(comps1[2]);
-  b = getValue(comps1[3]);
-  if (getValue(comps1[1]) === true) {
+  temp = [];
+  for (j = 0; j < comps1.length; j++) {
+    if (comps1[j]) {
+      temp.push(comps1[j]);
+    }
+  }
+  comps1 = temp;
+  a = getValue(comps1[1]);
+  b = getValue(comps1[2]);
+  if (getValue(comps1[0]) === true) {
     return true;
   }
-  return runOp(comps1[1], a, b);
+  return runOp(comps1[0], a, b);
 }
 
 function runOp(type, a, b) {
@@ -147,6 +183,7 @@ function runOp(type, a, b) {
     case "mul": return a * b;
     case "div": return a / b;
     case "pow": return a ** b;
+    case "log": return Math.log(a) / Math.log(b);
     case "mod": return a % b;
     case "con": return "" + a + b;
 
@@ -170,6 +207,10 @@ function runOp(type, a, b) {
     case "neq": return a !== b;
 
     case "bool": return a === 1 ? 1 : 0;
+
+    case "roun": return Math.round(a);
+    case "flor": return Math.floor(a);
+    case "ceil": return Math.ceil(a);
   }
   return false;
 }
@@ -177,7 +218,7 @@ function runOp(type, a, b) {
 function returnValue(line, value) {
   key = line.split(">>");
   if (key.length < 2) {
-    key = "$";
+    pVars.$ = value;
   } else {
     key = key[key.length - 1];
     temp = "";
@@ -189,9 +230,10 @@ function returnValue(line, value) {
     key = temp;
   }
   if (!key) {
-    key = "$";
+    pVars.$ = value;
+  } else {
+    vars[key] = value;
   }
-  vars[key] = value;
 }
 
 function sleep(time) {
