@@ -168,7 +168,7 @@ Returns random boolean `TRU` or `FLS`
 ```
 RAND;
 
-RAND >> $var;
+RAND >> var;
 ```
 
 ### Arguments
@@ -263,18 +263,45 @@ SCAN file >> var;
 
 # Process Variables
 
+Process variables are variables that are called with `$$` Double dollar instead of `$` Single dollar, and cannot be changed.
+
 `$$dir`: Directory of `tloc` file being executed (Eg. `file.tloc`) **NOT** executor file (`index.js`)
 
 `$$direx`: Directory of executor file (`index.js`) **NOT** `tloc` file (Eg. `index.tloc`)
 
 `$$`: Temporary variable. Default variable to return from command
 
-`$0`, `$1`, ect. Integer variables: Arguments used in initial run command.
+ - Eg. (These pairs of lines complete the same task)
+```
+OP ADD .1 .2;`
+PRINT $$;
+
+OP ADD .1 .2 >> varname;`
+PRINT $varname;
+```
+
+`$$0`, `$$1`, ect. Integer variables: Arguments used in initial run command.
 
  - Eg.
  - `node . . abc 123` <!-- Add npm support -->
- - `$0` = `"abc"`, `$1` = `123`
+ - `$$0` = `"abc"`, `$$1` = `"123"`
 
 # Other
 
-Comments: Line comments only. Use by adding `::` to the start of the line.
+Semicolon (`;`) is used to seperate commands. If a new command is on a new line, then it is not needed.
+
+ - Eg.
+```
+PRINT "Blah blah"
+PRINT "Abc";
+PRINT "foo"; RAND; PRINT $$
+```
+
+Comments: Use by adding `::` to the start of the line. Use `;` semicolon to end comment.
+
+ - Eg.
+```
+:: Comment here
+
+:: Comment also here; PRINT "Blah"; :: Comment
+```
