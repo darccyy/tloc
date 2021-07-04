@@ -177,7 +177,7 @@ RAND >> $var;
 
 ## LABEL
 
-Creates a label or marker to refer to by `GO` command. All label commands are hoisted.
+Creates a label or marker to refer to by `GO` command. All label commands are hoisted, and therefore you cannot create multiple labels with the same name.
 
 ### Usage
 
@@ -263,7 +263,9 @@ SCAN file >> var;
 
 # Process Variables
 
-`$$dir`: Directory of runner file (`index.js`) **NOT** Tloc file (`index.tloc`)
+`$$dir`: Directory of `tloc` file being executed (Eg. `file.tloc`) **NOT** executor file (`index.js`)
+
+`$$direx`: Directory of executor file (`index.js`) **NOT** `tloc` file (Eg. `index.tloc`)
 
 `$$`: Temporary variable. Default variable to return from command
 
