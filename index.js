@@ -4,8 +4,11 @@ const path = require("path");
 var data, lines, vars, pVars, labels;
 
 async function main() {
-  file = process.argv[2] || "index.tloc";
-  lines = fs.readFileSync(path.join(__dirname, `${file}`)).toString().split(";");
+  file = process.argv[2];
+  if (!file || file === ".") {
+    file = "index.tloc";
+  }
+  lines = fs.readFileSync(path.join(__dirname, `${file}`)).toString().split(/;|\r\n/);
   vars = {};
   pVars = {
     dir: __dirname,
@@ -25,7 +28,28 @@ async function main() {
       }
     }
     lines[i] = temp.join("");
-    comps = lines[i].split(" ");
+    line = lines[i];
+    comps = [];
+    inner = {
+      str: 0,
+      arr: 0,
+    };
+    str = "";
+    for (j = 0; j < line.length + 1; j++) {
+      if (line[j] == "\"") {
+        inner.str = (inner.str == 1 ? 0 : 1);
+      } else if (!inner.str && line[j] == "[") {
+        inner.arr ++;
+      } else if (!inner.str && line[j] == "]") {
+        inner.arr--;
+      }
+      if ((line[j] == " " || !line[j]) && !inner.str && !inner.arr) {
+        comps.push(str);
+        str = "";
+      } else {
+        str += line[j];
+      }
+    }
     cmd = comps[0];
     if (!cmd) {
       cmd = comps[1];
@@ -50,7 +74,28 @@ async function main() {
     if (lines[i].split(" ").join("").startsWith("::")) {
       continue;
     }
-    comps = lines[i].split(" ");
+    line = lines[i];
+    comps = [];
+    inner = {
+      str: 0,
+      arr: 0,
+    };
+    str = "";
+    for (j = 0; j < line.length + 1; j++) {
+      if (line[j] == "\"") {
+        inner.str = (inner.str == 1 ? 0 : 1);
+      } else if (!inner.str && line[j] == "[") {
+        inner.arr ++;
+      } else if (!inner.str && line[j] == "]") {
+        inner.arr--;
+      }
+      if ((line[j] == " " || !line[j]) && !inner.str && !inner.arr) {
+        comps.push(str);
+        str = "";
+      } else {
+        str += line[j];
+      }
+    }
     cmd = comps[0];
     if (!cmd) {
       cmd = comps[1];
@@ -86,11 +131,20 @@ async function main() {
               }
             }
           }; break;
+          case "len": {
+            if (comps[1] && getValue(comps[1])) {
+              value = getValue(comps[1]).length;
+              if (isNaN(value)) {
+                value = null;
+              }
+              returnValue(lines[i], value);
+            }
+          }; break;
           case "rand": {
             returnValue(lines[i], Math.random() >= 0.5);
           }; break;
           case "go": {
-            i = labels[comps[1]];
+            i = labels[getValue(comps[1]) || comps[1]];
           }; break;
           case "label": break;
           case "dissolve": {
@@ -133,22 +187,57 @@ function getValue(str) {
   if (str.startsWith("\"") && str.endsWith("\"")) {
     return str.substring(1, str.length - 1);
   }
+  if (str.startsWith("[") && str.endsWith("]")) {
+    temp = str.substring(1, str.length - 1).split(",");
+    arr = [];
+    for (j = 0; j < temp.length; j++) {
+      item = "";
+      pastFirst = false;
+      for (k = 0; k < temp[j].length; k++) {
+        if (pastFirst || temp[j][k] != " ") {
+          item += temp[j][k];
+        } else {
+          pastFirst = true;
+        }
+      }
+      arr.push(getValue(item));
+    }
+    return arr;
+  }
   if (str.startsWith(".")) {
     return parseFloat(str.substring(1, str.length));
   }
   if (str.startsWith("$$")) {
+    if (str.includes(":")) {
+      str = str.split(":");
+    } else {
+      str = [str];
+    }
     if (Object.keys(pVars).includes(str.substring(1, str.length))) {
-      return pVars[str.substring(1, str.length)];
+      item = pVars[str[0].substring(1, str[0].length)];
+      if (str[1]) {
+        item = item[getValue(str[1])];
+      }
+      return item;
     } else {
       console.error(`ERR: Unknown process variable '${str.substring(1, str.length)}'`);
       return;
     }
   }
   if (str.startsWith("$")) {
-    if (Object.keys(vars).includes(str.substring(1, str.length))) {
-      return vars[str.substring(1, str.length)];
+    if (str.includes(":")) {
+      str = str.split(":");
     } else {
-      console.error(`ERR: Unknown variable '${str.substring(1, str.length)}'`);
+      str = [str];
+    }
+    if (Object.keys(vars).includes(str[0].substring(1, str[0].length))) {
+      item = vars[str[0].substring(1, str[0].length)];
+      if (str[1]) {
+        item = item[getValue(str[1])];
+      }
+      return item;
+    } else {
+      console.error(`ERR: Unknown variable '${str[0].substring(1, str.length)}'`);
       return;
     }
   }
@@ -187,6 +276,7 @@ function runOp(type, a, b) {
     case "mod": return a % b;
     case "con": return "" + a + b;
 
+    case "bool": return a === 1 ? 1 : 0;
     case "not": return !a;
     case "and": return a && b;
     case "or": return a || b;
@@ -205,8 +295,6 @@ function runOp(type, a, b) {
     case "nelt": return a > b;
     case "negt": return a < b;
     case "neq": return a !== b;
-
-    case "bool": return a === 1 ? 1 : 0;
 
     case "roun": return Math.round(a);
     case "flor": return Math.floor(a);

@@ -1,0 +1,14 @@
+:: Function calling and rest of program;
+SET a .3; :: Set arguments;
+SET b .4;
+SET bn "rest"; :: Set place to return to;
+GO multiply; :: Call function;
+LABEL rest; :: Go back and output;
+PRINT $return;
+
+DISSOLVE; :: Stop program here;
+
+:: Function definition;
+LABEL multiply;
+OP MUL $a $b >> return; :: Multiply;
+GO $bn; :: Return to place;

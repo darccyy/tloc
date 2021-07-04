@@ -14,6 +14,8 @@ A terrible programming language created by me.
    
 4. This will run the `index.tloc` file
 
+5. To run example scripts, use `node . example/filename.tloc`, with `filename` being one of the files (`array`, `function`, `stringify`)
+
 # Data Values
 
 ## String
@@ -109,6 +111,10 @@ OP operator value1 value2 >> var;
 
 `CON`: Concatenates strings (converts numbers to string)
 
+---
+
+`BOOL`: Returns boolean value of binary (0 | 1) = (TRU | FLS)
+
 `NOT`: Not gate
 
 `AND`: And gate
@@ -122,6 +128,8 @@ OP operator value1 value2 >> var;
 `XOR`: Xor gate
 
 `XNOR`: Xnor gate
+
+---
 
 `LT`: Less than (<)
 
@@ -143,7 +151,13 @@ OP operator value1 value2 >> var;
 
 `NEQ`: Not eqal (!=)
 
-`BOOL`: Returns boolean value of binary (0 | 1) = (TRU | FLS)
+---
+
+`ROUN`: Round function
+
+`FLOR`: Floor function
+
+`CEIL`: Ceiling function
 
 ## RAND
 
@@ -173,7 +187,7 @@ LABEL name;
 
 ### Arguments
 
-`name`: Label name. Must be string. `"..."` string markers are unnecessary
+`name`: Label name. Can be string. `"..."` string markers are unnecessary. Same rules as `LABEL`, but with variables
 
 ## GO
 
@@ -256,7 +270,7 @@ SCAN file >> var;
 `$0`, `$1`, ect. Integer variables: Arguments used in initial run command.
 
  - Eg.
- - `node index index.tloc abc 123` <!-- Add npm support -->
+ - `node . . abc 123` <!-- Add npm support -->
  - `$0` = `"abc"`, `$1` = `123`
 
 # Other

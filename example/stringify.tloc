@@ -1,0 +1,47 @@
+:: Create input and output variables;
+SET num .528430;
+SET str "";
+
+:: Start loop
+SET i .0;
+LABEL start;
+
+:: Get index of number;
+OP LOG $num .10;
+OP FLOR $$;
+OP SUB $$ $i >> index;
+
+:: Get first part of number;
+OP POW .10 $index;
+OP DIV $num $$;
+OP FLOR $$ >> first;
+
+:: Get second part of number;
+OP ADD $index .1;
+OP POW .10 $$;
+OP DIV $num $$;
+OP FLOR $$;
+OP MUL $$ .10 >> second;
+
+:: Subtract each;
+OP SUB $first $second;
+
+:: Concat to string
+OP CON $str "0" ? EQ $$ .0 >> str;
+OP CON $str "1" ? EQ $$ .1 >> str;
+OP CON $str "2" ? EQ $$ .2 >> str;
+OP CON $str "3" ? EQ $$ .3 >> str;
+OP CON $str "4" ? EQ $$ .4 >> str;
+OP CON $str "5" ? EQ $$ .5 >> str;
+OP CON $str "6" ? EQ $$ .6 >> str;
+OP CON $str "7" ? EQ $$ .7 >> str;
+OP CON $str "8" ? EQ $$ .8 >> str;
+OP CON $str "9" ? EQ $$ .9 >> str;
+
+:: End of loop
+OP ADD $i .1 >> i;
+OP LOG $num .10;
+GO start ? lt $i $$;
+
+:: Output
+PRINT $str;

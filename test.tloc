@@ -1,42 +1,42 @@
-print "HelloWorld!";
+PRINT "HelloWorld!";
 
-set len ~14~;
-set amount ~5~;
+SET len .14;
+SET amount .5;
 
-set index ~0~;
-label "start"; 
+SET index .0;
+LABEL start; 
 
-set str "";
-set num ~0~;
-set digit ~0~;
-label "digit";
+SET str "";
+SET num .0;
+SET digit .0;
+LABEL digit;
 
-rand;
-set 0 ~0~;
-set 0 ~1~ ? $$;
+RAND;
+SET 0 .0;
+SET 0 .1 ? $$;
 
-op con $str $0;
-set str $$;
+OP CON $str $0;
+SET str $$;
 
-op sub $len $digit;
-op sub $$ ~1~;
+OP SUB $len $digit;
+OP SUB $$ .1;
 
-op pow ~2~ $$;
-op mul $0 $$;
+OP POW .2 $$;
+OP MUL $0 $$;
 
-op add $num $$;
-set num $$;
+OP ADD $num $$;
+SET num $$;
 
-op add $digit ~1~;
-set digit $$;
-go "digit" ? lt $digit $len;
+OP ADD $digit .1;
+SET digit $$;
+GO digit ? lt $digit $len;
 
-go "start" ? egt $num ~10000~;
+GO start ? egt $num .10000;
 
-op div $num ~100~;
-print $$;
+OP DIV $num .100;
+PRINT $$;
 
-op add $index ~1~;
-set index $$;
-halt ~0.2~;
-go "start" ? lt $index $amount;
+OP ADD $index .1;
+SET index $$;
+HALT .0.2;
+GO start ? lt $index $amount;
