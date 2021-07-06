@@ -4,7 +4,7 @@
   "description": "The Language of Cringe. A terrible programming language created by me.",
   "main": "index.js",
   "scripts": {
-    "test": "node . test.tloc",
+    "test": "node . example/test.tloc",
     "start": "node . index.tloc"
   },
   "repository": {

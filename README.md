@@ -55,6 +55,7 @@ Simply outputs the value.
 ```
 PRINT value;
 ```
+[Full Example](/example/test.tloc)
 
 ### Arguments
 `value`: Any data type (Converts to string)
@@ -68,6 +69,8 @@ Sets a variable to a value
 ```
 SET var value;
 ```
+
+[Full Example](/example/test.tloc)
 
 ### Arguments:
 
@@ -86,6 +89,8 @@ OP operator value1 value2;
 
 OP operator value1 value2 >> var;
 ```
+
+[Full Example](/example/test.tloc)
 
 ### Arguments
 
@@ -163,6 +168,8 @@ OP operator value1 value2 >> var;
 
 Returns random boolean `TRU` or `FLS`
 
+[Full Example](/example/random.tloc)
+
 ### Usage
 
 ```
@@ -185,6 +192,8 @@ Creates a label or marker to refer to by `GO` command. All label commands are ho
 LABEL name;
 ```
 
+[Full Example](/example/test.tloc)
+
 ### Arguments
 
 `name`: Label name. Can be string. `"..."` string markers are unnecessary. Same rules as `LABEL`, but with variables
@@ -199,13 +208,17 @@ Moves code runner to line number of `LABEL` command reference
 GO name;
 ```
 
+[Full Example](/example/test.tloc)
+
 ### Arguments
 
-`name`: Label name. Must be string. `"..."` string markers are unnecessary
+`name`: Label name. Plain text
 
 ## DISSOLVE
 
 Terminates program and immediatly quits
+
+[Full Example](/example/test.tloc)
 
 ### Usage
 
@@ -260,6 +273,39 @@ SCAN file >> var;
 `file`: Name of file to write to (string)
 
 `var`: Output variable. Leave blank to set to temp variable `$$`
+
+## IMPORT
+
+Imports the contents of a file to the current file.
+
+The imported file must be written in `tloc`, but does not need to have `.tloc` extension. It must be in the same directory as the index file. To go back a folder, use `../` in the path.
+
+Preferably use at the start of the file, as it is unable to be used with variables, and is hoisted before labels.
+
+The import function will essentially replace itself with the code in that file.
+
+### Usage
+
+```
+IMPORT file;
+```
+
+Example
+
+```
+IMPORT file.tloc;
+IMPORT ../../two_folders_back.tloc;
+IMPORT folder/other_folder/important123.txt;
+IMPORT /file_other.tloc;
+```
+
+Full Example
+[(Index file)](/example/import.tloc)
+[(Imported file)](/example/random.tloc)
+
+### Arguments
+
+`file`: Plain text. Cannot be variable.
 
 # Process Variables
 
