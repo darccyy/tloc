@@ -10,9 +10,9 @@ PRINT $len;
 SET index .0;
 LABEL start;
 
-:: Output index of array
-PRINT $arr:$index;
+  :: Output index of array
+  PRINT $arr:$index;
 
-:: End of loop
-OP ADD $index .1 >> index;
-GO start ? LT $index $len;
+  :: End of loop
+  OP ADD $index .1 >> index;
+  GO start ? LT $index $len;
