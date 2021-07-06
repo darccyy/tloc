@@ -29,48 +29,38 @@ async function main() {
     pVars["$" + (i - 3)] = getValue(process.argv[i]);
   }
 
+  /* Import files */
+  importLines = [];
+  newLines = [];
   I: for (i = 0; i < lines.length; i++) {
-    lines[i] = lines[i].split("\r\n");
-    temp = [];
-    for (j = 0; j < lines[i].length; j++) {
-      if (lines[i][j]) {
-        temp.push(lines[i][j]);
-      }
-    }
-    lines[i] = temp.join("");
-    line = lines[i];
-    comps = [];
-    inner = {
-      str: 0,
-      arr: 0,
-    };
-    str = "";
-    for (j = 0; j < line.length + 1; j++) {
-      if (line[j] == "\"") {
-        inner.str = (inner.str == 1 ? 0 : 1);
-      } else if (!inner.str && line[j] == "[") {
-        inner.arr++;
-      } else if (!inner.str && line[j] == "]") {
-        inner.arr--;
-      }
-      if ((line[j] == " " || !line[j]) && !inner.str && !inner.arr) {
-        comps.push(str);
-        str = "";
-      } else {
-        str += line[j];
-      }
-    }
+    let {cmd, comps} = parseLine(lines[i]);
 
-    temp = [];
-    pastFirst = false;
-    for (j = 0; j < comps.length; j++) {
-      if (comps[j] || pastFirst) {
-        pastFirst = true;
-        temp.push(comps[j]);
+    if (cmd) {
+      cmd = cmd.toLowerCase();
+      if (cmd === "import") {
+        file = pVars.$dir + "\\" + comps[1];
+
+        if (fs.existsSync(file)) {
+          text = fs.readFileSync(file).toString();
+          text = text.split(/;|\r\n/);
+          text.forEach(j => {
+            if (j) {
+              importLines.push(j);
+            }
+          });
+        } else {
+          console.log(`ERR: Import file not exist '${file}'`);
+        }
+      } else {
+        newLines.push(lines[i]);
       }
     }
-    comps = temp;
-    cmd = comps[0];
+  }
+  lines = [...importLines, ...newLines];
+
+  /* Hoist labels */
+  I: for (i = 0; i < lines.length; i++) {
+    let {cmd, comps} = parseLine(lines[i]);
 
     if (cmd) {
       cmd = cmd.toLowerCase();
@@ -84,58 +74,16 @@ async function main() {
     }
   }
 
+  /* Other commands */
   I: for (i = 0; i < lines.length; i++) {
-    lines[i] = lines[i].split("\r\n");
-    temp = [];
-    for (j = 0; j < lines[i].length; j++) {
-      if (lines[i][j]) {
-        temp.push(lines[i][j]);
-      }
-    }
-    lines[i] = temp.join("");
-    if (lines[i].split(" ").join("").startsWith("::")) {
-      continue;
-    }
-
-    line = lines[i];
-    comps = [];
-    inner = {
-      str: 0,
-      arr: 0,
-    };
-    str = "";
-    for (j = 0; j < line.length + 1; j++) {
-      if (line[j] == "\"") {
-        inner.str = (inner.str == 1 ? 0 : 1);
-      } else if (!inner.str && line[j] == "[") {
-        inner.arr++;
-      } else if (!inner.str && line[j] == "]") {
-        inner.arr--;
-      }
-      if ((line[j] == " " || !line[j]) && !inner.str && !inner.arr) {
-        comps.push(str);
-        str = "";
-      } else {
-        str += line[j];
-      }
-    }
-
-    temp = [];
-    pastFirst = false;
-    for (j = 0; j < comps.length; j++) {
-      if (comps[j] || pastFirst) {
-        pastFirst = true;
-        temp.push(comps[j]);
-      }
-    }
-    comps = temp;
-    cmd = comps[0];
+    let {cmd, comps, line} = parseLine(lines[i]);
 
     if (checkIf(lines[i])) {
       if (cmd) {
         // console.log(cmd, vars);
         cmd = cmd.toLowerCase();
         switch (cmd) {
+          case "label": case "import": case "::": break;
           case "print": {
             if (comps[1]) {
               console.log(getValue(comps[1]));
@@ -175,7 +123,7 @@ async function main() {
               }
               returnValue(lines[i], value);
             }
-          }; break; 
+          }; break;
           case "cont": {
             key = comps[1];
             value = getValue(comps[2])
@@ -191,9 +139,14 @@ async function main() {
             returnValue(lines[i], Math.random() >= 0.5);
           }; break;
           case "go": {
-            i = labels[getValue(comps[1]) || comps[1]];
+            name = getValue(comps[1]) || comps[1];
+            label = labels[name];
+            if (label) {
+              i = label;
+            } else {
+              console.error(`ERR: Unknown label '${name}'`);
+            }
           }; break;
-          case "label": break;
           case "dissolve": {
             break I;
           }; break;
@@ -209,7 +162,7 @@ async function main() {
           }; break;
           case "scan": {
             if (comps[1]) {
-              returnValue(lines[i], fs.readFileSync(getValue(comps[1])).toString());
+              returnValue(line, fs.readFileSync(getValue(comps[1])).toString());
             }
           }; break;
           case "input": {
@@ -413,4 +366,54 @@ function replaceSpecial(str) {
     str = str.split(Object.keys(replace)[j]).join(Object.values(replace)[j]);
   }
   return str;
+}
+
+function parseLine(line) {
+  line = line.split("\r\n");
+  temp = [];
+  for (j = 0; j < line.length; j++) {
+    if (line[j]) {
+      temp.push(line[j]);
+    }
+  }
+  line = temp.join("");
+
+  comps = [];
+  inner = {
+    str: 0,
+    arr: 0,
+  };
+  str = "";
+  for (j = 0; j < line.length + 1; j++) {
+    if (line[j] == "\"") {
+      inner.str = (inner.str == 1 ? 0 : 1);
+    } else if (!inner.str && line[j] == "[") {
+      inner.arr++;
+    } else if (!inner.str && line[j] == "]") {
+      inner.arr--;
+    }
+    if ((line[j] == " " || !line[j]) && !inner.str && !inner.arr) {
+      comps.push(str);
+      str = "";
+    } else {
+      str += line[j];
+    }
+  }
+
+  temp = [];
+  pastFirst = false;
+  for (j = 0; j < comps.length; j++) {
+    if (comps[j] || pastFirst) {
+      pastFirst = true;
+      temp.push(comps[j]);
+    }
+  }
+  comps = temp;
+  cmd = comps[0];
+
+  if (!cmd || cmd.startsWith("::")) {
+    return {cmd: "::", comps, line};
+  }
+
+  return {cmd, comps, line};
 }

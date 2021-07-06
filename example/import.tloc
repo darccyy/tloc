@@ -1,0 +1,9 @@
+IMPORT random.tloc; ::Import file
+
+:: Call function with arguments and return line
+SET _min .100;
+SET _max .200;
+GO random;
+LABEL _back;
+
+PRINT $_return; :: Output

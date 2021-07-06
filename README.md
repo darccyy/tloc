@@ -288,6 +288,8 @@ PRINT $varname;
 
 # Other
 
+All variables are on global scope.
+
 Semicolon (`;`) is used to seperate commands. If a new command is on a new line, then it is not needed.
 
  - Eg.
@@ -295,6 +297,43 @@ Semicolon (`;`) is used to seperate commands. If a new command is on a new line,
 PRINT "Blah blah"
 PRINT "Abc";
 PRINT "foo"; RAND; PRINT $$
+```
+
+Indentations and blank lines are not necessary, but they might help to read.
+
+ - Eg.
+```
+LABEL upper;
+  LEN $_str >> len;
+  LEN $low >> lenLow;
+  SET new "";
+
+  SET i .0;
+  LABEL i;
+    SET char $_str:$i;
+
+    SET j .0;
+    LABEL j;
+
+      SET char $up:$j ? EQ $low:$j $_str:$i;
+
+      ...
+```
+> VS
+
+```
+LABEL upper;
+LEN $_str >> len;
+LEN $low >> lenLow;
+SET new "";
+SET i .0;
+LABEL i;
+SET char $_str:$i;
+SET j .0;
+LABEL j;
+SET char $up:$j ? EQ $low:$j $_str:$i;
+
+...
 ```
 
 Comments: Use by adding `::` to the start of the line. Use `;` semicolon to end comment.

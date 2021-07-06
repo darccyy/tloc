@@ -1,7 +1,8 @@
+IMPORT random.tloc; ::Import file
 PRINT "Hangman!";
 
 :: Read file (nouns.txt)
-OP CON $$dir "/nouns.txt";
+OP CON $$dir "\nouns.txt";
 SCAN $$ >> file;
 LEN $file >> len;
 OP ADD $len .1 >> len;
@@ -35,35 +36,17 @@ LABEL start;
   OP LOG $$ .2;
   OP CEIL $$ >> len;
 
-  LABEL getWord;
-    SET num .0;
-    SET i .0;
-    LABEL i;
-
-      RAND;
-      SET dig .0;
-      SET dig .1 ? $$;
-
-      OP SUB $len $i;
-      OP SUB $$ .1;
-
-      OP POW .2 $$;
-      OP MUL $dig $$;
-
-      OP ADD $num $$ >> num;
-
-      OP ADD $i .1 >> i;
-      GO i ? LT $i $len;
-
-    LEN $words;
-    GO getWord ? egt $num $$;
-
+  SET _min .0;
+  LEN $words;
+  SET _max $$;
+  GO random;
+  LABEL _back;
 
   SET word $words:$num;
   LEN $word >> wordLen;
   SET string "";
   SET count .7;
-  :: PRINT $$; :: Uncomment to cheat!
+  :: PRINT $word; :: Uncomment to cheat!
 
   :: Create blank text
   SET j .0;
