@@ -1,0 +1,24 @@
+GO bottom;
+LABEL mod;
+
+  :: a - ( b * floor( a / b ) ) Modulo / Modulus function
+
+  OP DIV $_a $_b;
+  OP FLOR $$;
+  OP MUL $_b $$;
+  OP SUB $_a $$ >> _return;
+
+  GO _mod_back;
+
+LABEL bottom; :: ---------
+
+SET i .0;
+LABEL i;
+  SET _a $i;
+  SET _b .3;
+  GO mod;
+  LABEL _mod_back;
+  PRINT $_return;
+
+  OP ADD $i .1 >> i;
+  GO i ? LT $i .10;

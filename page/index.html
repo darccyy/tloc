@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>tloc</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> -->
+    <!-- <script src="https://kit.fontawesome.com/03abc70cb1.js" crossorigin="anonymous"></script> -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-latest.min.js"></script>
+    <script type="text/javascript" src="index.js" defer></script>
+    <script type="text/javascript" src="script.js" defer></script>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+  </head>
+  <body onload="init()">
+    <section id="control">
+      <button onclick="run()">Run</button>
+      <section id="filenames"></section>
+      <button onclick="deleteFile()">Delete File</button>
+      <button onclick="createFile()">Create File</button>
+      <button onclick="renameFile()">Rename File</button>
+    </section>
+
+    <div id="main">
+      <textarea id="console" class="part" readonly></textarea>
+      <textarea id="file" class="part" onkeydown="fileInput(event)"></textarea>
+    </div>
+  </body>
+</html>

@@ -1,33 +1,12 @@
-const fs = require("fs");
-const path = require("path");
-
 var lines, vars, pVars, labels;
 
-async function main() {
-  file = process.argv[2];
-  if (!file || file === ".") {
-    file = "index.tloc";
-  }
-  if (!fs.existsSync(path.join(__dirname, `${file}`))) {
-    if (fs.existsSync(path.join(__dirname, `${file + ".tloc"}`))) {
-      file += ".tloc";
-    } else {
-      console.error("ERR: File not exist!");
-      process.exit();
-    }
-  }
-  lines = fs.readFileSync(path.join(__dirname, `${file}`)).toString().split(/;|\r\n/);
+async function main(content) {
+  lines = content.split(/;|\r\n/);
   vars = {};
   pVars = {
-    $direx: __dirname,
-    $dir: path.join(__dirname, `${file}`).split("\\").slice(0, -1).join("\\"),
     $: null,
   };
   labels = {};
-
-  for (i = 3; i < process.argv.length; i++) {
-    pVars["$" + (i - 3)] = getValue(process.argv[i]);
-  }
 
   /* Import files */
   importLines = [];
@@ -49,7 +28,7 @@ async function main() {
             }
           });
         } else {
-          console.log(`ERR: Import file not exist '${file}'`);
+          log(`ERR: Import file not exist '${file}'`);
         }
       } else {
         newLines.push(lines[i]);
@@ -66,7 +45,7 @@ async function main() {
       cmd = cmd.toLowerCase();
       if (cmd === "label") {
         if (labels[comps[1]]) {
-          console.log(`ERR: Cannot override label '${comps[1]}'`);
+          log(`ERR: Cannot override label '${comps[1]}'`);
         } else {
           labels[comps[1]] = i;
         }
@@ -80,13 +59,13 @@ async function main() {
 
     if (checkIf(lines[i])) {
       if (cmd) {
-        // console.log(cmd, vars);
+        console.log(cmd, vars);
         cmd = cmd.toLowerCase();
         switch (cmd) {
           case "label": case "import": case "::": break;
           case "print": {
             if (comps[1]) {
-              console.log(getValue(comps[1]));
+              log(getValue(comps[1]));
             }
           }; break;
           case "set": {
@@ -95,14 +74,14 @@ async function main() {
                 value = comps[2];
                 vars[comps[1]] = getValue(value);
               } else {
-                console.log("ERR: Cannot create variable starting with '$'");
+                log("ERR: Cannot create variable starting with '$'");
               }
             }
           }; break;
           case "op": {
             if (comps[1] && comps[2]) {
               if (["not", "bool", "roun", "flor", "ceil"].includes(comps[1].toLowerCase()) || comps[3]) {
-                // console.log(getValue(comps[3]));
+                // log(getValue(comps[3]));
                 value = runOp(comps[1], getValue(comps[2]), getValue(comps[3]));
                 if (isNaN(value) && parseFloat(value) == value) {
                   value = null;
@@ -169,15 +148,13 @@ async function main() {
             returnValue(line, await input(getValue(comps[1]) || "Input: "));
           }; break;
           default: {
-            console.log(`ERR: Unknown command '${cmd.toUpperCase()}'`);
+            log(`ERR: Unknown command '${cmd.toUpperCase()}'`);
           };
         }
       }
     }
   }
 }
-
-main();
 
 function getValue(str) {
   if (!str) {
@@ -369,7 +346,7 @@ function replaceSpecial(str) {
 }
 
 function parseLine(line) {
-  line = line.split("\r\n");
+  line = line.split("\n");
   temp = [];
   for (j = 0; j < line.length; j++) {
     if (line[j]) {
