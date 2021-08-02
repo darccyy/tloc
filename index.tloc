@@ -1,0 +1,46 @@
+PRINT "HelloWorld!";
+
+SET len .14;
+SET amount .5;
+
+SET index .0;
+LABEL start;
+
+  SET str "";
+  SET num .0;
+  SET digit .0;
+  LABEL digit;
+
+    RAND;
+    SET 0 .0;
+    SET 0 .1 ? $$;
+
+    OP CON $str $0;
+    SET str $$;
+
+    OP SUB $len $digit;
+    OP SUB $$ .1;
+
+    OP POW .2 $$;
+    OP MUL $0 $$;
+
+    OP ADD $num $$;
+    SET num $$;
+
+    OP ADD $digit .1;
+    SET digit $$;
+    GO digit ? lt $digit $len;
+
+  GO start ? egt $num .10000;
+
+OP DIV $num .100;
+PRINT $$;
+
+OP ADD $index .1;
+SET index $$;
+HALT .0.2;
+GO start ? lt $index $amount;
+
+DISSOLVE;
+
+PRINT "This should not be printed";

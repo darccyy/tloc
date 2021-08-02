@@ -4,7 +4,7 @@ SET len .14;
 SET amount .5;
 
 SET index .0;
-LABEL start; 
+LABEL start;
 
   SET str "";
   SET num .0;

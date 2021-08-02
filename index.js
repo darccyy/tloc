@@ -193,12 +193,12 @@ function getValue(str) {
   if (str.startsWith("[") && str.endsWith("]")) {
     temp = str.substring(1, str.length - 1).split(",");
     arr = [];
-    for (j = 0; j < temp.length; j++) {
+    for (ja = 0; ja < temp.length; ja++) {
       item = "";
       pastFirst = false;
-      for (k = 0; k < temp[j].length; k++) {
-        if (pastFirst || temp[j][k] != " ") {
-          item += temp[j][k];
+      for (k = 0; k < temp[ja].length; k++) {
+        if (pastFirst || temp[ja][k] != " ") {
+          item += temp[ja][k];
         } else {
           pastFirst = true;
         }

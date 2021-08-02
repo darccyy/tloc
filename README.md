@@ -11,10 +11,19 @@ A terrible programming language created by me.
 2. Make sure you have Node.JS installed.
 
 3. Run the command `npm start`
-   
 4. This will run the `index.tloc` file
 
-5. To run example scripts, use `node . example/filename.tloc`, with `filename` being one of the files (`array`, `function`, `stringify`)
+5. To run example scripts, use `node . example/filename.tloc`, with `filename`
+   - Example scripts:
+   1. `array` - Array / List
+   1. `function` - Function / Label
+   1. `upper` - Upper Case String
+   1. `mod` - Modulo Formula
+   1. `random` - Random Number Function
+   1. `stringify` - Stringify Number
+   1. `import` - Importing File
+   1. `hangman` - Hangman Game
+   1. `rps` - Rock, Paper, Scissors Game
 
 # Data Values
 
@@ -55,9 +64,11 @@ Simply outputs the value.
 ```
 PRINT value;
 ```
+
 [Full Example](/example/test.tloc)
 
 ### Arguments
+
 `value`: Any data type (Converts to string)
 
 ## SET
@@ -317,7 +328,8 @@ Process variables are variables that are called with `$$` Double dollar instead 
 
 `$$`: Temporary variable. Default variable to return from command
 
- - Eg. (These pairs of lines complete the same task)
+- Eg. (These pairs of lines complete the same task)
+
 ```
 OP ADD .1 .2;`
 PRINT $$;
@@ -328,9 +340,9 @@ PRINT $varname;
 
 `$$0`, `$$1`, ect. Integer variables: Arguments used in initial run command.
 
- - Eg.
- - `node . . abc 123` <!-- Add npm support -->
- - `$$0` = `"abc"`, `$$1` = `"123"`
+- Eg.
+- `node . . abc 123` <!-- Add npm support -->
+- `$$0` = `"abc"`, `$$1` = `"123"`
 
 # Other
 
@@ -338,7 +350,8 @@ All variables are on global scope.
 
 Semicolon (`;`) is used to seperate commands. If a new command is on a new line, then it is not needed.
 
- - Eg.
+- Eg.
+
 ```
 PRINT "Blah blah"
 PRINT "Abc";
@@ -347,7 +360,8 @@ PRINT "foo"; RAND; PRINT $$
 
 Indentations and blank lines are not necessary, but they might help to read.
 
- - Eg.
+- Eg.
+
 ```
 LABEL upper;
   LEN $_str >> len;
@@ -365,6 +379,7 @@ LABEL upper;
 
       ...
 ```
+
 > VS
 
 ```
@@ -384,9 +399,16 @@ SET char $up:$j ? EQ $low:$j $_str:$i;
 
 Comments: Use by adding `::` to the start of the line. Use `;` semicolon to end comment.
 
- - Eg.
+- Eg.
+
 ```
 :: Comment here
 
 :: Comment also here; PRINT "Blah"; :: Comment
 ```
+
+# To Do
+
+Add non-conflicting labels for imported modules (`GO filename:labelname`)
+
+### Created by [darcy](https://github.com/darccyy)

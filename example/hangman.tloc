@@ -7,7 +7,7 @@ SCAN $$ >> file;
 LEN $file >> len;
 OP ADD $len .1 >> len;
 SET words [];
-SET str "";
+SET str "";2
 
 :: Convert file to array
 SET letter .0;

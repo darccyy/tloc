@@ -1,5 +1,5 @@
 :: Define array and length
-SET arr ["a", "b", .123, .1.2, TRU, NUL];
+SET arr ["a", "b", "c", .123, "d", .1.2, TRU, NUL];
 LEN $arr >> len;
 
 :: Output values
