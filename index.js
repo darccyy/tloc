@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const fetch = require("node-fetch");
 
 var lines, vars, pVars, labels;
 
@@ -38,7 +39,16 @@ async function main() {
     if (cmd) {
       cmd = cmd.toLowerCase();
       if (cmd === "import") {
-        file = pVars.$dir + "\\" + comps[1];
+        file = comps[1];
+        if (file.startsWith(".")) {
+          file = pVars.$dir + "\\" + file;
+        }
+        if (file.startsWith("http")) {
+          fetch(file, {method: "Get"})
+            .then(res => {
+              console.log(res);
+            });
+        }
 
         if (fs.existsSync(file)) {
           text = fs.readFileSync(file).toString();

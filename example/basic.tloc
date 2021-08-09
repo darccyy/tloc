@@ -1,0 +1,32 @@
+GO basic:bottom;
+
+LABEL basic:random;
+  OP SUB $&max $&min >> diff;
+
+  OP LOG $diff .2;
+  OP CEIL $$ >> len;
+
+  SET num .0;
+  SET i .0;
+  LABEL i;
+
+    RAND;
+    SET dig .0;
+    SET dig .1 ? $$;
+
+    OP SUB $len $i;
+    OP SUB $$ .1;
+
+    OP POW .2 $$;
+    OP MUL $dig $$;
+
+    OP ADD $num $$ >> num;
+
+    OP ADD $i .1 >> i;
+    GO i ? LT $i $len;
+
+  GO basic:random ? egt $num $diff;
+  OP ADD $num $&min >> &;
+  GO $back;
+
+LABEL basic:bottom;
