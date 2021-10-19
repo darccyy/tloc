@@ -1,0 +1,155 @@
+GO basic:bottom;
+
+
+LABEL basic:random;
+  OP SUB $&max $&min >> diff;
+
+  OP LOG $diff .2;
+  OP CEIL $$ >> len;
+
+  SET num .0;
+  SET i .0;
+  LABEL i;
+
+    RAND;
+    SET dig .0;
+    SET dig .1 ? $$;
+
+    OP SUB $len $i;
+    OP SUB $$ .1;
+
+    OP POW .2 $$;
+    OP MUL $dig $$;
+
+    OP ADD $num $$ >> num;
+
+    OP ADD $i .1 >> i;
+    GO i ? LT $i $len;
+
+  GO basic:random ? egt $num $diff;
+  OP ADD $num $&min >> &;
+  GO $back;
+
+
+LABEL basic:toNumber;
+  LEN $&str >> len;
+  SET decimals .0;
+  SET & .0;
+  SET char .0;
+  LABEL char;
+
+    OP MUL $& .10 ? NEQ $&str:$char "." >> &;
+
+    SET 0 FLS;
+    SET 0 TRU ? EQ $&str:$char ".";
+    SET 0 TRU ? GT $decimals .0;
+    OP ADD $decimals .1 ? $0 "." >> decimals;
+
+    OP ADD $& .0 ? EQ $&str:$char "0" >> &;
+    OP ADD $& .1 ? EQ $&str:$char "1" >> &;
+    OP ADD $& .2 ? EQ $&str:$char "2" >> &;
+    OP ADD $& .3 ? EQ $&str:$char "3" >> &;
+    OP ADD $& .4 ? EQ $&str:$char "4" >> &;
+    OP ADD $& .5 ? EQ $&str:$char "5" >> &;
+    OP ADD $& .6 ? EQ $&str:$char "6" >> &;
+    OP ADD $& .7 ? EQ $&str:$char "7" >> &;
+    OP ADD $& .8 ? EQ $&str:$char "8" >> &;
+    OP ADD $& .9 ? EQ $&str:$char "9" >> &;
+
+    OP ADD $char .1 >> char;
+    GO char ? LT $char $len;
+  
+  OP SUB $decimals .1 ? GT $decimals .0 >> decimals;
+  OP POW .10 $decimals;
+  OP DIV $& $$ >> &;
+  GO $back;
+
+
+LABEL basic:toString
+  SET & "";
+  SET digit .0;
+  LABEL digit;
+
+    OP LOG $&num .10;
+    OP FLOR $$;
+    OP SUB $$ $digit >> index;
+
+    OP POW .10 $index;
+    OP DIV $&num $$;
+    OP FLOR $$ >> first;
+
+    OP ADD $index .1;
+    OP POW .10 $$;
+    OP DIV $&num $$;
+    OP FLOR $$;
+    OP MUL $$ .10 >> second;
+
+    OP SUB $first $second;
+    OP CON $& "0" ? EQ $$ .0 >> &;
+    OP CON $& "1" ? EQ $$ .1 >> &;
+    OP CON $& "2" ? EQ $$ .2 >> &;
+    OP CON $& "3" ? EQ $$ .3 >> &;
+    OP CON $& "4" ? EQ $$ .4 >> &;
+    OP CON $& "5" ? EQ $$ .5 >> &;
+    OP CON $& "6" ? EQ $$ .6 >> &;
+    OP CON $& "7" ? EQ $$ .7 >> &;
+    OP CON $& "8" ? EQ $$ .8 >> &;
+    OP CON $& "9" ? EQ $$ .9 >> &;
+
+    OP ADD $digit .1 >> digit;
+    OP LOG $&num .10;
+    GO digit ? lt $digit $$;
+
+  SET decimal .0;
+  SET afterDec "";
+  LABEL decimal;
+      
+    :: PRINT $decimal;
+    OP POW .10 $decimal;
+    OP MUL $&num $$ >> new;
+
+
+    OP LOG $new .10;
+    OP FLOR $$ >> len;
+
+    OP LOG $&num .10;
+    OP FLOR $$;
+    OP SUB $$ $len >> index;
+
+    OP POW .10 $index;
+    OP DIV $&num $$;
+    OP FLOR $$ >> first;
+
+    OP ADD $index .1;
+    OP POW .10 $$;
+    OP DIV $&num $$;
+    OP FLOR $$;
+    OP MUL $$ .10 >> second;
+
+    OP SUB $first $second;
+    OP CON $afterDec "0" ? EQ $$ .0 >> afterDec;
+    OP CON $afterDec "1" ? EQ $$ .1 >> afterDec;
+    OP CON $afterDec "2" ? EQ $$ .2 >> afterDec;
+    OP CON $afterDec "3" ? EQ $$ .3 >> afterDec;
+    OP CON $afterDec "4" ? EQ $$ .4 >> afterDec;
+    OP CON $afterDec "5" ? EQ $$ .5 >> afterDec;
+    OP CON $afterDec "6" ? EQ $$ .6 >> afterDec;
+    OP CON $afterDec "7" ? EQ $$ .7 >> afterDec;
+    OP CON $afterDec "8" ? EQ $$ .8 >> afterDec;
+    OP CON $afterDec "9" ? EQ $$ .9 >> afterDec;
+      
+    OP ADD $decimal .1 >> decimal;
+    OP FLOR $new;
+    GO decimal ? NEQ $new $$;
+
+  SET doDec FLS;
+  LEN $afterDec;
+  SET doDec TRU ? GT $$ .0;
+  SET doDec FLS ? EQ $afterDec "0";
+  OP CON $& "." ? $doDec >> &;
+  OP CON $& $afterDec ? $doDec >> &;
+
+  GO $back;
+
+
+LABEL basic:bottom;

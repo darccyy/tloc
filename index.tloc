@@ -1,9 +1,103 @@
-IMPORT example/basic.tloc;
+PRINT "\nHangman!";
 
-SET &min .4;
-SET &max .9;
-SET back "afterthisone";
-GO basic:random;
-LABEL afterthisone;
+:: Read file and split at linebreak
+ARRAY words CLOSE;
+READ "words.txt" >> file;
 
-PRINT $&;
+SET current "";
+SET i 0;
+LABEL i;
+  IF $file:$i = "\n";
+    ? GIVE $words $current;
+    ? SET current "";
+  ELSE
+    ? CON $current $file:$i >> current;
+
+  ADD $i 1 >> i;
+  LEN $file;
+  IF $i < $$ ? GOTO "i";
+GIVE $words $current;
+
+LABEL game;
+
+  :: Get random word
+  LEN $words >> len;
+  LOG $len 2;
+  CEL $$ >> log;
+  LABEL random;
+    SET num 0;
+    SET i 0;
+
+    LABEL digits;
+      SET digit 0;
+      RAND;
+      IF $$ = 1 ? SET digit 1;
+      SUB $log $i;
+      SUB $$ 1;
+      POW 2 $$;
+      MUL $digit $$;
+      ADD $num $$ >> num;
+
+      ADD $i 1 >> i;
+      IF $i < $log ? GOTO "digits";
+
+    IF $num >= $len ? GOTO "random";
+
+  :: Start game
+  SET word $words:$num;
+  SET correct "";
+  SET attempts 6;
+
+  LABEL frame;
+
+    :: Generate visible word
+    SET display "";
+    SET i 0;
+    LABEL i;
+      SET char "_";
+      
+      SET j 0;
+      LABEL j;
+        IF $word:$i = $correct:$j
+          ? SET char $word:$i
+        
+        ADD $j 1 >> j;
+        LEN $correct;
+        IF $j < $$ ? GOTO "j";
+
+      CON $display $char >> display;
+      
+      ADD $i 1 >> i;
+      LEN $word;
+      IF $i < $$ ? GOTO "i";
+
+    IF $display = $word ? GOTO "win"; :: Check for win
+
+    PRINT "\n" $display " Attempts left: " $attempts;
+    INPUT "Guess: " >> guess;
+    
+    :: Add correct guess to memory
+    SUB $attempts 1 >> attempts;
+    SET i 0;
+    LABEL i;
+      IF $word:$i = $guess
+        ? CON $correct $guess >> correct
+        ? ADD $attempts 1 >> attempts
+        ? GOTO "i-break";
+      
+      ADD $i 1 >> i;
+      LEN $word;
+      IF $i < $$ ? GOTO "i";
+    LABEL i-break;
+
+    IF $attempts <= 0 ? GOTO "lose"; :: Check for loss
+
+    GOTO "frame"; :: Next frame of game
+
+    LABEL win;
+      PRINT "\nYou won!";
+      GOTO "game";
+
+    LABEL lose;
+      PRINT "\nYou lost :(";
+      GOTO "game";

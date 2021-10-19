@@ -1,4 +1,4 @@
-IMPORT random.tloc; ::Import file
+IMPORT ./random.tloc; ::Import file
 PRINT "Hangman!";
 
 :: Read file (nouns.txt)
@@ -7,7 +7,7 @@ SCAN $$ >> file;
 LEN $file >> len;
 OP ADD $len .1 >> len;
 SET words [];
-SET str "";2
+SET str "";
 
 :: Convert file to array
 SET letter .0;

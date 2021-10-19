@@ -1,0 +1,18 @@
+IMPORT example/basic.tloc;
+
+LABEL loop;
+  INPUT "Number: ";
+
+  SET &str $$;
+  SET back ">toNumber";
+  GO basic:toNumber;
+  LABEL >toNumber;
+  PRINT $&;
+
+  SET &num $&;
+  SET back ">toString";
+  GO basic:toString;
+  LABEL >toString;
+  PRINT $&;
+
+  GO loop;

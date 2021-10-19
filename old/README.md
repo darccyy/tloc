@@ -4,6 +4,9 @@ A terrible programming language created by me.
 
 /tiːlɒk/
 
+Last time file updated: `2021-08-09`.
+If this time was a while ago, chances are this file is not up to date and shows incorrect information.
+
 # How to use
 
 1. Download the files.
@@ -24,6 +27,11 @@ A terrible programming language created by me.
    1. `import` - Importing File
    1. `hangman` - Hangman Game
    1. `rps` - Rock, Paper, Scissors Game
+
+## Information
+
+I am working on a proper installation program for this.
+You should be able to Download > Install > Run `tloc` command in terminal.
 
 # Data Values
 
@@ -289,7 +297,11 @@ SCAN file >> var;
 
 Imports the contents of a file to the current file.
 
-The imported file must be written in `tloc`, but does not need to have `.tloc` extension. It must be in the same directory as the index file. To go back a folder, use `../` in the path.
+The imported file must be written in `tloc`, and needs to have `.tloc` extension.
+If the imported file is in the same location as the `tloc` fle being ran, it needs to start with `.` or `./`.
+To go back a folder, use `../` in the path.
+If it has a different location, use the absolute file path (Most likely starting with `C:/`).
+To use an online file, use the plain url, and make sure it starts with `http://` or `https://`.
 
 Preferably use at the start of the file, as it is unable to be used with variables, and is hoisted before labels.
 
@@ -304,10 +316,14 @@ IMPORT file;
 Example
 
 ```
-IMPORT file.tloc;
+IMPORT ./file.tloc;
 IMPORT ../../two_folders_back.tloc;
-IMPORT folder/other_folder/important123.txt;
-IMPORT /file_other.tloc;
+IMPORT ./folder/other_folder/important123.txt;
+IMPORT ./file_other.tloc;
+
+IMPORT C:/Users/computername/another_file.tloc;
+
+IMPORT https://raw.githubusercontent.com/darccyy/tloc/main/example/basic.tloc
 ```
 
 Full Example

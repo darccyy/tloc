@@ -1,429 +1,635 @@
 const fs = require("fs");
 const path = require("path");
-const fetch = require("node-fetch");
 
-var lines, vars, pVars, labels;
+var program;
+var storage = {$if: false, $: null};
+var full = -1;
+var goLine = null;
+
+const math = {
+  single: {
+    FLR: a => {
+      return Math.floor(a);
+    },
+    RND: a => {
+      return Math.round(a);
+    },
+    CEL: a => {
+      return Math.ceil(a);
+    },
+  },
+
+  double: {
+    ADD: (a, b) => {
+      return a + b;
+    },
+    SUB: (a, b) => {
+      return a - b;
+    },
+    MUL: (a, b) => {
+      return a * b;
+    },
+    DIV: (a, b) => {
+      return a / b;
+    },
+    POW: (a, b) => {
+      return a ** b;
+    },
+    NRT: (a, b) => {
+      if (!b) {
+        b = 2;
+      }
+      return a ** (1 / b);
+    },
+    LOG: (a, b) => {
+      if (!b) {
+        b = 1;
+      }
+      return Math.log(a) / Math.log(b);
+    },
+  },
+};
 
 async function main() {
-  file = process.argv[2];
-  if (!file || file === ".") {
-    file = "index.tloc";
-  }
-  if (!fs.existsSync(path.join(__dirname, `${file}`))) {
-    if (fs.existsSync(path.join(__dirname, `${file + ".tloc"}`))) {
-      file += ".tloc";
-    } else {
-      console.error("ERR: File not exist!");
-      process.exit();
+  // Get file to read
+  var filename = process.argv[2];
+  var dir = __dirname.split("\\").join("/");
+  if (!filename) {
+    filename = dir + "/index.tloc";
+  } else if (filename[1] !== ":") {
+    if (filename.startsWith("./")) {
+      filename = filename.slice(1);
+    } else if (!filename.startsWith("/")) {
+      filename = "/" + filename;
     }
-  }
-  lines = fs.readFileSync(path.join(__dirname, `${file}`)).toString().split(/;|\r\n/);
-  vars = {};
-  pVars = {
-    $direx: __dirname,
-    $dir: path.join(__dirname, `${file}`).split("\\").slice(0, -1).join("\\"),
-    $: null,
-  };
-  labels = {};
-
-  for (i = 3; i < process.argv.length; i++) {
-    pVars["$" + (i - 3)] = getValue(process.argv[i]);
+    filename = dir + filename;
   }
 
-  /* Import files */
-  importLines = [];
-  newLines = [];
-  I: for (i = 0; i < lines.length; i++) {
-    let {cmd, comps} = parseLine(lines[i]);
+  if (!fs.existsSync(filename)) {
+    error("File not Exist");
+  }
+  storage.$dir = filename.split("/").slice(0, -1).join("/");
 
-    if (cmd) {
-      cmd = cmd.toLowerCase();
-      if (cmd === "import") {
-        file = comps[1];
-        if (file.startsWith(".")) {
-          file = pVars.$dir + "\\" + file;
-        }
-        if (file.startsWith("http")) {
-          fetch(file, {method: "Get"})
-            .then(res => {
-              console.log(res);
-            });
-        }
+  // Read file
+  const file = fs
+    .readFileSync(filename)
+    .toString()
+    .split("\r\n")
+    .join("\n");
+  program = formatFile(file);
+  // fs.writeFileSync(
+  //   __dirname + "/output.json",
+  //   JSON.stringify(program, null, 2),
+  // );
 
-        if (fs.existsSync(file)) {
-          text = fs.readFileSync(file).toString();
-          text = text.split(/;|\r\n/);
-          text.forEach(j => {
-            if (j) {
-              importLines.push(j);
-            }
-          });
-        } else {
-          console.log(`ERR: Import file not exist '${file}'`);
-        }
-      } else {
-        newLines.push(lines[i]);
+  var formingArray = {name: null};
+  Full: for (full = 0; full < program.length; full++) {
+    if (!program[full]) {
+      continue;
+    }
+
+    Line: for (
+      var line = 0;
+      line < program[full].lines.length;
+      line++
+    ) {
+      if (goLine) {
+        line = goLine;
+        goLine = null;
       }
-    }
-  }
-  lines = [...importLines, ...newLines];
 
-  /* Hoist labels */
-  I: for (i = 0; i < lines.length; i++) {
-    let {cmd, comps} = parseLine(lines[i]);
+      var args = program[full].lines[line].args;
 
-    if (cmd) {
-      cmd = cmd.toLowerCase();
-      if (cmd === "label") {
-        if (labels[comps[1]]) {
-          console.log(`ERR: Cannot override label '${comps[1]}'`);
-        } else {
-          labels[comps[1]] = i;
+      if (formingArray.name) {
+        if (args[0].toUpperCase() === "CLOSE") {
+          storage[formingArray.name] = formingArray.items;
+          formingArray = {name: null};
+          continue Line;
         }
+        formingArray.items.push(parseValue(args.join(" ")));
+        continue Line;
       }
-    }
-  }
 
-  /* Other commands */
-  I: for (i = 0; i < lines.length; i++) {
-    let {cmd, comps, line} = parseLine(lines[i]);
+      if (!args || !args[0]) {
+        continue;
+      }
+      if (args[0] === "?") {
+        if (!storage.$if) {
+          continue Line;
+        }
+        args = args.slice(1);
+      }
 
-    if (checkIf(lines[i])) {
-      if (cmd) {
-        // console.log(cmd, vars);
-        cmd = cmd.toLowerCase();
-        switch (cmd) {
-          case "label": case "import": case "::": break;
-          case "print": {
-            if (comps[1]) {
-              console.log(getValue(comps[1]));
-            }
-          }; break;
-          case "set": {
-            if (comps[1]) {
-              if (comps[1][0] != "$") {
-                value = comps[2];
-                vars[comps[1]] = getValue(value);
-              } else {
-                console.log("ERR: Cannot create variable starting with '$'");
+      var cmd = args[0].toUpperCase();
+      args = args.slice(1);
+
+      if (math.single[cmd]) {
+        var a = parseValue(args[0]);
+
+        if (typeof a !== "number") {
+          error(
+            `Cannot use '${cmd}' Operator on Non-Number type`,
+            a,
+          );
+        }
+
+        var c = math.single[cmd](a);
+        saveStorage(c, args);
+        continue Line;
+      }
+
+      if (math.double[cmd]) {
+        var a = parseValue(args[0]);
+        var b = parseValue(args[1]);
+
+        if (typeof a !== "number") {
+          error(
+            `Cannot use '${cmd}' Operator on Non-Number type`,
+            a,
+          );
+        }
+        if (typeof b !== "number") {
+          error(
+            `Cannot use '${cmd}' Operator on Non-Number type`,
+            b,
+          );
+        }
+
+        var c = math.double[cmd](a, b);
+        saveStorage(c, args);
+        continue Line;
+      }
+
+      switch (cmd) {
+        case "PRINT": // Print text to terminal
+          {
+            console.log(args.map(parseValue).join(""));
+          }
+          break;
+
+        case "GOTO": // Go to a line in file
+          {
+            if (args[0].startsWith(":")) {
+              if (isNaN(parseInt(args[0].slice(1)))) {
+                error(
+                  "Cannot Move to Non-Number line",
+                  args[0],
+                );
               }
+              full = parseInt(args[0].slice(1)) - 2;
+              continue Full;
             }
-          }; break;
-          case "op": {
-            if (comps[1] && comps[2]) {
-              if (["not", "bool", "roun", "flor", "ceil"].includes(comps[1].toLowerCase()) || comps[3]) {
-                // console.log(getValue(comps[3]));
-                value = runOp(comps[1], getValue(comps[2]), getValue(comps[3]));
-                if (isNaN(value) && parseFloat(value) == value) {
-                  value = null;
+
+            var value = parseValue(args[0]);
+            I: for (var i = full; i >= 0; i--) {
+              if (!program[i]) {
+                continue I;
+              }
+              J: for (
+                var j = 0;
+                j < program[i].lines.length;
+                j++
+              ) {
+                if (!program[i].lines[j]) {
+                  continue J;
                 }
-                returnValue(lines[i], value);
+                if (
+                  program[i].lines[
+                    j
+                  ].args[0].toUpperCase() === "LABEL"
+                ) {
+                  if (
+                    program[i].lines[j].args[1] === value
+                  ) {
+                    full = i - 1;
+                    goLine = j;
+                    continue Full;
+                  }
+                }
               }
             }
-          }; break;
-          case "len": {
-            if (comps[1] && getValue(comps[1])) {
-              value = getValue(comps[1]);
-              if (typeof value === "string") {
-                value = value.split("~").join("")
+
+            I: for (var i = full; i < program.length; i++) {
+              if (!program[i]) {
+                continue I;
               }
-              value = value.length;
-              if (isNaN(value)) {
-                value = null;
+              J: for (
+                var j = 0;
+                j < program[i].lines.length;
+                j++
+              ) {
+                if (!program[i].lines[j]) {
+                  continue J;
+                }
+                if (
+                  program[i].lines[
+                    j
+                  ].args[0].toUpperCase() === "LABEL"
+                ) {
+                  if (
+                    program[i].lines[j].args[1] === value
+                  ) {
+                    full = i - 1;
+                    goLine = j;
+                    continue Full;
+                  }
+                }
               }
-              returnValue(lines[i], value);
             }
-          }; break;
-          case "cont": {
-            key = comps[1];
-            value = getValue(comps[2])
-            if (key && value) {
-              if (vars[key] && vars[key].constructor === Array) {
-                arr = vars[key];
-                arr.push(value);
-                vars[key] = arr;
+
+            if (typeof value === "string") {
+              value = `"${value}"`;
+            }
+            error("Unknown Label", `${args[0]} (${value})`);
+          }
+          break;
+
+        case "SET": // Set variable
+          {
+            if (args[0]) {
+              if (args[0].startsWith("$")) {
+                error("Cannot Assign Constant Variable");
               }
+              storage[args[0]] = parseValue(args[1]);
             }
-          }; break;
-          case "rand": {
-            returnValue(lines[i], Math.random() >= 0.5);
-          }; break;
-          case "go": {
-            name = getValue(comps[1]) || comps[1];
-            label = labels[name];
-            if (label) {
-              i = label;
-            } else {
-              console.error(`ERR: Unknown label '${name}'`);
+          }
+          break;
+
+        case "IF": // If statement
+          {
+            var a = parseValue(args[0]);
+            var b = parseValue(args[2]);
+            var c = false;
+            switch (args[1]) {
+              case "<":
+                c = a < b;
+                break;
+              case ">":
+                c = a > b;
+                break;
+              case "<=":
+                c = a <= b;
+                break;
+              case ">=":
+                c = a >= b;
+                break;
+              case "=":
+                c = a === b;
+                break;
+              case "!=":
+                c = a !== b;
+                break;
+              default:
+                error(
+                  "Unknown Conditional Operator",
+                  args[1],
+                );
             }
-          }; break;
-          case "dissolve": {
-            break I;
-          }; break;
-          case "halt": {
-            if (comps[1]) {
-              await sleep(getValue(comps[1]));
+            storage.$if = c;
+          }
+          break;
+
+        case "ARRAY": // Start an array
+          {
+            formingArray = {name: args[0], items: []};
+
+            I: for (var i = 1; i < args.length; i++) {
+              if (args[i].toUpperCase() === "CLOSE") {
+                storage[formingArray.name] =
+                  formingArray.items;
+                formingArray = {name: null};
+                break I;
+              }
+
+              formingArray.items.push(parseValue(args[i]));
             }
-          }; break;
-          case "pen": {
-            if (comps[1]) {
-              fs.writeFileSync(getValue(comps[1]), getValue(comps[2]) || "");
+          }
+          break;
+
+        case "RAND": // Get random 0 or 1
+          {
+            saveStorage(Math.round(Math.random()), args);
+          }
+          break;
+
+        case "LEN": // Get length of string / Array
+          {
+            saveStorage(parseValue(args[0]).length, args);
+          }
+          break;
+
+        case "END": // Terminate program
+          {
+            process.exit();
+          }
+          break;
+
+        case "GIVE": // Append / Push value to array
+          {
+            if (!args[0]) {
+              error("No Array Stated", args[0]);
             }
-          }; break;
-          case "scan": {
-            if (comps[1]) {
-              returnValue(line, fs.readFileSync(getValue(comps[1])).toString());
+            var array = parseValue(args[0]);
+            if (!(array instanceof Array)) {
+              error("Variable is not Array", args[0]);
             }
-          }; break;
-          case "input": {
-            returnValue(line, await input(getValue(comps[1]) || "Input: "));
-          }; break;
-          default: {
-            console.log(`ERR: Unknown command '${cmd.toUpperCase()}'`);
-          };
+            array.push(parseValue(args[1]));
+            storage[args[0]] = array;
+          }
+          break;
+
+        case "CON": // Concatenate strings
+          {
+            var a = parseValue(args[0]);
+            var b = parseValue(args[1]);
+            if (typeof a !== "string") {
+              error(
+                "Cannot Concatenate Non-String Values",
+                a,
+              );
+            }
+            if (typeof b !== "string") {
+              error(
+                "Cannot Concatenate Non-String Values",
+                b,
+              );
+            }
+            saveStorage(a + b, args);
+          }
+          break;
+
+        case "INPUT": // Get user input from terminal
+          {
+            saveStorage(
+              await input(
+                args[0] === undefined
+                  ? ""
+                  : parseValue(args[0]),
+              ),
+              args,
+            );
+          }
+          break;
+
+        case "READ": // Read file
+          {
+            var filename = parseValue(args[0]);
+            if (!filename) {
+              error("No File Stated", args[0]);
+            }
+            if (filename[1] !== ":") {
+              if (filename.startsWith("./")) {
+                filename = filename.slice(1);
+              } else if (!filename.startsWith("/")) {
+                filename = "/" + filename;
+              }
+              filename = storage.$dir + filename;
+            }
+            if (!fs.existsSync(filename)) {
+              error("File not Exist", args[0]);
+            }
+
+            saveStorage(
+              fs
+                .readFileSync(filename)
+                .toString()
+                .split("\r\n")
+                .join("\n"),
+              args,
+            );
+          }
+          break;
+
+        case "WRITE": // Write file
+          {
+            var filename = parseValue(args[0]);
+            if (!filename) {
+              error("No File Stated", args[0]);
+            }
+            if (filename[1] !== ":") {
+              if (filename.startsWith("./")) {
+                filename = filename.slice(1);
+              } else if (!filename.startsWith("/")) {
+                filename = "/" + filename;
+              }
+              filename = storage.$dir + filename;
+            }
+
+            var value = parseValue(args[1]);
+            if (!value && value !== 0) {
+              value = "";
+            }
+            fs.writeFileSync(filename, value);
+          }
+          break;
+
+        case "ELSE": // Negate if condition
+          {
+            storage.$if = !storage.$if;
+          }
+          break;
+
+        case "::": // Comment
+        case "LABEL": // Used at GOTO command
+          break;
+        default: {
+          error("Unknown Command", cmd);
         }
       }
     }
   }
+  full = -1;
 }
-
 main();
 
-function getValue(str) {
+// Throw error
+function error(str, data) {
   if (!str) {
-    return null;
+    str = "Unknown";
   }
-  vals = {"TRU": true, "FLS": false, "NUL": null};
-  if (Object.keys(vals).includes(str)) {
-    return vals[str];
-  }
-  if (str.startsWith("\"") && str.endsWith("\"")) {
-    return replaceSpecial(str.substring(1, str.length - 1));
-  }
-  if (str.startsWith("[") && str.endsWith("]")) {
-    temp = str.substring(1, str.length - 1).split(",");
-    arr = [];
-    for (ja = 0; ja < temp.length; ja++) {
-      item = "";
-      pastFirst = false;
-      for (k = 0; k < temp[ja].length; k++) {
-        if (pastFirst || temp[ja][k] != " ") {
-          item += temp[ja][k];
-        } else {
-          pastFirst = true;
-        }
-      }
-      if (item) {
-        arr.push(getValue(item));
-      }
-    }
-    return arr;
-  }
-  if (str.startsWith(".")) {
-    return parseFloat(str.substring(1, str.length));
-  }
-  if (str.startsWith("$$")) {
-    if (str.includes(":")) {
-      str = str.split(":");
-    } else {
-      str = [str];
-    }
-    if (str[0]) {
-      if (Object.keys(pVars).includes(str[0].substring(1, str[0].length))) {
-        item = pVars[str[0].substring(1, str[0].length)];
-        if (str[1]) {
-          item = item[getValue(str[1])];
-        }
-        return replaceSpecial(item);
-      } else {
-        console.error(`ERR: Unknown process variable '${str[0].substring(1, str[0].length)}'`);
-        return;
-      }
-    }
-  }
-  if (str.startsWith("$")) {
-    if (str.includes(":")) {
-      str = str.split(":");
-    } else {
-      str = [str];
-    }
-    if (str[0]) {
-      if (Object.keys(vars).includes(str[0].substring(1, str[0].length))) {
-        item = vars[str[0].substring(1, str[0].length)];
-        if (str[1]) {
-          item = item[getValue(str[1])];
-        }
-        return replaceSpecial(item);
-      } else {
-        console.error(`ERR: Unknown variable '${str[0].substring(1, str[0].length)}'`);
-        return;
-      }
-    }
-  }
-  return false;
-}
 
-function checkIf(line) {
-  line = line.split(">>");
-  if (line.length > 1) {
-    line = line.slice(0, line.length - 1);
-  }
-  line = line.join(">>");
-  comps1 = line.split("?");
-  if (!comps1[1]) {
-    return true;
-  }
-  comps1 = comps1[comps1.length - 1].split(" ");
-  temp = [];
-  for (j = 0; j < comps1.length; j++) {
-    if (comps1[j]) {
-      temp.push(comps1[j]);
-    }
-  }
-  comps1 = temp;
-  a = getValue(comps1[1]);
-  b = getValue(comps1[2]);
-  if (getValue(comps1[0]) === true) {
-    return true;
-  }
-  return runOp(comps1[0], a, b);
-}
-
-function runOp(type, a, b) {
-  switch (type.toLowerCase()) {
-    case "add": return a + b;
-    case "sub": return a - b;
-    case "mul": return a * b;
-    case "div": return a / b;
-    case "pow": return a ** b;
-    case "log": return Math.log(a) / Math.log(b);
-    case "mod": return a % b;
-    case "con": return "" + a + b;
-
-    case "bool": return a === 1 ? 1 : 0;
-    case "not": return !a;
-    case "and": return a && b;
-    case "or": return a || b;
-    case "nand": return !(a && b);
-    case "nor": return !(a || b);
-    case "xor": return (a || b) && !(a && b);
-    case "xnor": return !((a || b) && !(a && b));
-
-    case "lt": return a < b;
-    case "gt": return a > b;
-    case "elt": return a <= b;
-    case "egt": return a >= b;
-    case "eq": return a === b;
-    case "nlt": return a >= b;
-    case "ngt": return a <= b;
-    case "nelt": return a > b;
-    case "negt": return a < b;
-    case "neq": return a !== b;
-
-    case "roun": return Math.round(a);
-    case "flor": return Math.floor(a);
-    case "ceil": return Math.ceil(a);
-  }
-  return false;
-}
-
-function returnValue(line, value) {
-  key = line.split(">>");
-  if (key.length < 2) {
-    pVars.$ = value;
+  if (!full && full !== 0) {
+    console.error(
+      `\n! FATAL ERROR\n    ${str}\n    Unknown\n`,
+    );
+  } else if (full === -1) {
+    console.error(`\n! FATAL ERROR\n    ${str}\n`);
   } else {
-    key = key[key.length - 1];
-    temp = "";
-    for (j = 0; j < key.length; j++) {
-      if (key[j] != " ") {
-        temp += key[j];
-      }
+    var fullLine = program[full].full;
+    while (fullLine.startsWith(" ")) {
+      fullLine = fullLine.slice(1);
     }
-    key = temp;
+    if (!data) {
+      console.error(
+        `\n! FATAL ERROR\n    ${str}\n    At Line ${
+          full + 1
+        }\n        ${fullLine}\n`,
+      );
+    } else {
+      console.error(
+        `\n! FATAL ERROR\n    ${str}\n    At Line ${
+          full + 1
+        }\n        ${fullLine}\n        >> ${data}\n`,
+      );
+    }
   }
-  if (!key) {
-    pVars.$ = value;
-  } else {
-    vars[key] = value;
-  }
+
+  process.exit();
 }
 
-function sleep(time) {
-  return new Promise(resolve => {
-    setTimeout(resolve, time * 1000);
-  });
-}
-
+// Input text to console
 function input(prompt) {
-  return (new Promise((resolve) => {
-    let rl = require("readline").createInterface(process.stdin, process.stdout);
-    rl.question(prompt, (res) => {
+  return new Promise(resolve => {
+    var rl = require("readline").createInterface(
+      process.stdin,
+      process.stdout,
+    );
+    rl.question(prompt, res => {
       resolve(res);
       rl.close();
     });
-  }));
+  });
 }
 
-function replaceSpecial(str) {
-  if (typeof str !== "string") {
+// Format file
+function formatFile(file) {
+  var program = [];
+  var current = [];
+  for (var i in file) {
+    if (file[i] === "\n") {
+      program.push({full: current});
+      current = [];
+      continue;
+    }
+    current += file[i];
+  }
+  program.push({full: current});
+
+  for (var i in program) {
+    if (!program[i].full[0]) {
+      program[i] = null;
+      continue;
+    }
+
+    program[i].lines = [];
+
+    var current = "";
+    var inQuote = false;
+    for (var j in program[i].full) {
+      if (program[i].full[j] === '"') {
+        inQuote = !inQuote;
+      } else if (
+        (program[i].full[j] === ";" ||
+          program[i].full[j] === "?") &&
+        !inQuote
+      ) {
+        while (current.startsWith(" ")) {
+          current = current.slice(1);
+        }
+        if (current) {
+          program[i].lines.push({line: current});
+        }
+        current = program[i].full[j] === "?" ? "?" : "";
+        continue;
+      }
+      current += program[i].full[j];
+    }
+    while (current.startsWith(" ")) {
+      current = current.slice(1);
+    }
+    if (current) {
+      program[i].lines.push({line: current});
+    }
+
+    for (var j in program[i].lines) {
+      var line = program[i].lines[j].line;
+      program[i].lines[j].args = [];
+
+      var current = "";
+      var inQuote = false;
+      for (var k in line) {
+        if (line[k] === '"') {
+          inQuote = !inQuote;
+        } else if (line[k] === " " && !inQuote) {
+          while (current.startsWith(" ")) {
+            current = current.slice(1);
+          }
+          if (current) {
+            program[i].lines[j].args.push(current);
+          }
+          current = "";
+          continue;
+        }
+        current += line[k];
+      }
+      while (current.startsWith(" ")) {
+        current = current.slice(1);
+      }
+      if (current) {
+        program[i].lines[j].args.push(current);
+      }
+    }
+  }
+
+  return program;
+}
+
+// Parse value into data types
+function parseValue(raw) {
+  if (raw == undefined) {
+    return null;
+  }
+
+  if (raw.startsWith("$")) {
+    var name = raw.slice(1).split(":")[0];
+    if (!Object.keys(storage).includes(name)) {
+      error("Unknown Variable", raw);
+    }
+    if (raw.includes(":")) {
+      return storage[name][parseValue(raw.split(":")[1])];
+    }
+    return storage[name];
+  }
+
+  if (raw.startsWith('"')) {
+    if (!raw.endsWith('"')) {
+      error("Unclosed String", raw);
+    }
+    var str = raw.slice(1, -1);
+    var replace = {"\\n": "\n"};
+    for (var i in replace) {
+      str = str.split(i).join(replace[i]);
+    }
     return str;
   }
-  replace = {
-    "\r": "~r",
-    "\n": "~n",
-  };
-  for (j = 0; j < Object.keys(replace).length; j++) {
-    str = str.split(Object.keys(replace)[j]).join(Object.values(replace)[j]);
+
+  if (!isNaN(parseInt(raw))) {
+    return parseInt(raw);
   }
-  return str;
+
+  if (!isNaN(parseFloat(raw))) {
+    return parseFloat(raw);
+  }
+
+  error("Unknown Value Type", raw);
 }
 
-function parseLine(line) {
-  line = line.split("\r\n");
-  temp = [];
-  for (j = 0; j < line.length; j++) {
-    if (line[j]) {
-      temp.push(line[j]);
-    }
-  }
-  line = temp.join("");
-
-  comps = [];
-  inner = {
-    str: 0,
-    arr: 0,
-  };
-  str = "";
-  for (j = 0; j < line.length + 1; j++) {
-    if (line[j] == "\"") {
-      inner.str = (inner.str == 1 ? 0 : 1);
-    } else if (!inner.str && line[j] == "[") {
-      inner.arr++;
-    } else if (!inner.str && line[j] == "]") {
-      inner.arr--;
-    }
-    if ((line[j] == " " || !line[j]) && !inner.str && !inner.arr) {
-      comps.push(str);
-      str = "";
-    } else {
-      str += line[j];
-    }
+// Save variable to storage
+function saveStorage(value, args) {
+  if (args.slice(-1)[0] === ">>") {
+    error("No Output Variable Stated");
   }
 
-  temp = [];
-  pastFirst = false;
-  for (j = 0; j < comps.length; j++) {
-    if (comps[j] || pastFirst) {
-      pastFirst = true;
-      temp.push(comps[j]);
-    }
-  }
-  comps = temp;
-  cmd = comps[0];
-
-  if (!cmd || cmd.startsWith("::")) {
-    return {cmd: "::", comps, line};
+  if (args.slice(-2)[0] !== ">>") {
+    storage.$ = value;
+    return;
   }
 
-  return {cmd, comps, line};
+  if (!args.slice(-1)[0]) {
+    error("No Output Variable Stated");
+  }
+  if (args.slice(-1)[0].startsWith("$")) {
+    error("Cannot Assign Constant Variable");
+  }
+  storage[args.slice(-1)[0]] = value;
 }
