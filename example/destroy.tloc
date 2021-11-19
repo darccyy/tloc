@@ -1,0 +1,186 @@
+Label reset
+  Set x 2
+  Set y 3
+  Set w 20
+  Set h 10
+  Set player "▶"
+  Array map
+    "       ,WNXXNW*,    "
+    "    ,Kc        dW   "
+    "   Wx           'N  "
+    "  k .   ;xOOOkd  K  "
+    "  c..     cool   K  "
+    "  o..            K  "
+    "  WO;    oxx;    K  "
+    "    l    X  d   .K  "
+    "    l    X  d   .K  "
+    "    'tloc'  'nice'  "
+  Close
+
+  Keymode 1
+  Set prevScreen NUL
+
+Label render
+  Set screen ""
+  Set i -1
+  Label i
+
+    Set mapLine $map:$i
+    Set j -1
+    Label j
+      Set char " "
+      If $mapLine != NUL
+        Set char $mapLine:$j
+      End
+      
+      If $i = -1
+        Set char "_"
+      End
+      If $i = $h
+        Set char "‾"
+      End
+
+      If $j = -1
+        Set char "⎹"
+        If $i = -1
+          Set char " "
+        End
+        If $i = $h
+          Set char " "
+        End
+      End
+
+      If $j = $w
+        Set char "⎸"
+        If $i = -1
+          Set char " "
+        End
+        If $i = $h
+          Set char " "
+        End
+      End
+
+      If $j = $x
+        If $i = $y
+          Set char $player
+        End
+      End
+
+      Con $screen $char >> screen
+
+      Add $j 1 >> j
+      Add $w 1
+      If $j < $$; Goto j
+
+    Con $screen "~n" >> screen
+      
+    Add $i 1 >> i
+    Add $h 1
+    If $i < $$; Goto i
+
+  If $screen != $prevScreen
+    Clear
+    Print $screen
+  End
+  Set prevScreen $screen
+
+  Set xn $x
+  Set yn $y
+  If $$key = "Left" ; Sub $xn 1 >> xn; Set player "◀"; End
+  If $$key = "a"    ; Sub $xn 1 >> xn; Set player "◀"; End
+  If $$key = "Right"; Add $xn 1 >> xn; Set player "▶"; End
+  If $$key = "d"    ; Add $xn 1 >> xn; Set player "▶"; End
+  If $$key = "Up"   ; Sub $yn 1 >> yn; Set player "▲"; End
+  If $$key = "w"    ; Sub $yn 1 >> yn; Set player "▲"; End
+  If $$key = "Down" ; Add $yn 1 >> yn; Set player "▼"; End
+  If $$key = "s"    ; Add $yn 1 >> yn; Set player "▼"; End
+  If $$key = " "    ; Set $key NUL; Goto destroy
+  If $$key = "r"    ; Set $key NUL; Goto reset
+  Label afterKeys
+  Set $key NUL
+
+  Set mapLine $map:$yn
+  If $mapLine != NUL
+    If $mapLine:$xn = " "
+      Set x $xn
+      Set y $yn
+    End
+  End
+  
+  If $x < 0
+    Set x 0
+  End
+  Sub $w 1
+  If $x >= $$
+    Set x $$
+  End
+  If $y < 0
+    Set y 0
+  End
+  Sub $h 1
+  If $y >= $$
+    Set y $$
+  End
+
+  Halt 50
+  Goto render
+
+  Label destroy
+    Set xd 0
+    Set yd 0
+    If $player = "◀"; Set xd -1; End
+    If $player = "▶"; Set xd 1 ; End
+    If $player = "▲"; Set yd -1; End
+    If $player = "▼"; Set yd 1 ; End
+
+    If $xd = 0
+      If $yd = 0
+        Goto afterKeys
+
+    Add $xd $x >> xd
+    Add $yd $y >> yd
+
+    Set mapLine $map:$yd
+    If $mapLine = NUL
+      Goto afterKeys
+    If $mapLine:$xd = " "
+      Goto afterKeys
+    
+    Array new Close
+
+    Set before $map:~$yd
+    Len $before >> len
+    Set i 0
+    Label i
+      If $yd != 0
+        Give $new $before:$i
+      End
+      Add $i 1 >> i
+      If $i < $len; Goto i
+
+    Len $mapLine >> len
+    Set str ""
+    Set i 0
+    Label i
+      Set char $mapLine:$i
+      If $i = $xd
+        Set char " "
+      End
+      Con $str $char >> str
+
+      Add $i 1 >> i
+      If $i < $len; Goto i
+    Give $new $str
+      
+    Add $yd 1
+    Set after $map:$$~
+    Len $after >> len
+    Set i 0
+    Label i
+      Give $new $after:$i
+      Add $i 1 >> i
+      If $i < $len; Goto i
+
+    Set map $new
+
+    Goto afterKeys

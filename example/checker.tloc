@@ -1,0 +1,20 @@
+Set text ""
+Set y 0
+Label y
+  If $y > 0
+    Con $text "~n" >> text
+  End
+  Set x 0
+  Label x
+    Set char "  "
+    Add $y $x
+    Mod $$ 2
+    If $$ = 1
+      Set char "██"
+    End
+    Con $text $char >> text
+    Add $x 1 >> x
+    If $x < 10; Goto x
+  Add $y 1 >> y
+  If $y < 10; Goto y
+Print $text

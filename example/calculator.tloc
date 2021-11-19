@@ -1,0 +1,103 @@
+ARRAY buttons "%" "^" "." "/" "7" "8" "9" "*" "4" "5" "6" "-" "1" "2" "3" "+" " " "0" " " "=" CLOSE;
+
+SET x 0;
+SET y 0;
+SET w 4;
+SET h 5;
+
+KEYMODE 1;
+SET prev NUL;
+SET input "";
+
+LABEL frame;
+  SET bar "-";
+  SET bar2 "|";
+  MUL $w 4 >> w2;
+  ADD $w2 1 >> w2;
+  
+  SET j 0;
+  LABEL j;
+    CON $bar "------" >> bar;
+    CON $bar2 "     |" >> bar2;
+
+    ADD $j 1 >> j;
+    IF $j < $w ? GOTO "j";
+
+  CON $bar "\n" >> bar;
+  CON $bar2 "\n" >> bar2;
+  SET whole $bar;
+
+  SET i 0;
+  LABEL i;
+    SET line "|  ";
+
+    SET j 0;
+    LABEL j;
+      MUL $i $w >> num;
+      MOD $j $w;
+      ADD $num $$ >> num;
+      SET char $buttons:$num;
+      
+      IF $j = $x
+        ? IF $i = $y
+          ? SET line $line:~-2;
+          ? CON $line "<<" >> line; 
+          ? CON $line $char >> line;
+          ? CON $line ">>|  " >> line;
+        ELSE
+          ? CON $line $char >> line;
+          ? CON $line "  |  " >> line;
+
+      ADD $j 1 >> j;
+      IF $j < $w ? GOTO "j";
+    
+    CON $whole $bar2 >> whole;
+    CON $whole $line >> whole;
+    CON $whole "\n" >> whole;
+    CON $whole $bar2 >> whole;
+    CON $whole $bar >> whole;
+      
+    ADD $i 1 >> i;
+    IF $i < $h ? GOTO "i";
+  
+  IF $whole != $prev
+    ? CLEAR;
+    ? PRINT $input;
+    ? PRINT $whole;
+  SET prev $whole;
+
+  IF $$key = "Left"  ? SUB $x 1 >> x;
+  IF $$key = "a"     ? SUB $x 1 >> x;
+  IF $$key = "Right" ? ADD $x 1 >> x;
+  IF $$key = "d"     ? ADD $x 1 >> x;
+  IF $$key = "Up"    ? SUB $y 1 >> y;
+  IF $$key = "w"     ? SUB $y 1 >> y;
+  IF $$key = "Down"  ? ADD $y 1 >> y;
+  IF $$key = "s"     ? ADD $y 1 >> y;
+  IF $$key = "Enter" ? GOTO "keyPress";
+  IF $$key = "BackSpace" ? GOTO "backSpace";
+  LABEL afterKeys;
+  SET $key NUL;
+
+  IF $x < 0 ? SET x 0;
+  SUB $w 1;
+  IF $x >= $$ ? SET x $$;
+  IF $y < 0 ? SET y 0;
+  SUB $h 1;
+  IF $y >= $$ ? SET y $$;
+
+  HALT 50;
+  GOTO "frame";
+
+LABEL keyPress;
+  MUL $y $w >> num;
+  MOD $x $w;
+  ADD $num $$ >> num;
+  CON $input $buttons:$num >> input;
+  SET prev NUL;
+  GOTO "afterKeys";
+
+LABEL backSpace;
+  SET input $input:~-1
+  SET prev NUL;
+  GOTO "afterKeys";

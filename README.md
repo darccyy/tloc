@@ -19,4 +19,8 @@ If this time was a while ago, chances are this file is not up to date and shows 
 
 # To Do
 
+- [ ] Add process variables to get size of terminal
+- [ ] Add better printing (TRU, FLS, NUL, Arrays)
+- [ ] Fix error arguments
+
 ### Created by [darcy](https://github.com/darccyy)
