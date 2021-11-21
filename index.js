@@ -89,7 +89,7 @@ async function main() {
   if (!fs.existsSync(filename)) {
     error("File not exist");
   }
-  storage.$dir = filename.split("/").slice(0, -1).join("/");
+  storage.$dir = filename;
 
   // Read file
   const file = fs.readFileSync(filename).toString().split("\r\n").join("\n");
@@ -128,6 +128,7 @@ async function main() {
 
       var args = program[full].lines[line].args;
 
+      // Continue to add to array of open
       if (formingArray.name) {
         if (args[0].toUpperCase() === "CLOSE") {
           storage[formingArray.name] = formingArray.items;
@@ -143,6 +144,8 @@ async function main() {
       if (!args || !args[0]) {
         continue;
       }
+
+      // Check if statement
       if (
         (storage.$if.includes("0") || storage.$if.includes("E")) &&
         ["IF"].includes(args[0].toUpperCase())
@@ -168,6 +171,7 @@ async function main() {
       var cmd = rawCmd.toUpperCase();
       args = args.slice(1);
 
+      // Math commands (1 / 2 argument)
       if (math.single[cmd]) {
         var a = parseValue(args[0]);
 
@@ -199,59 +203,7 @@ async function main() {
       switch (cmd) {
         case "PRINT": // Print text to terminal
           {
-            if (args.length >= 1) {
-              var value =
-                args.length === 1
-                  ? printValue(args[0])
-                  : args.map(printValue).join("");
-
-              function parseColor(string, isBg) {
-                if (!string) {
-                  return "";
-                }
-                if (string.startsWith("#")) {
-                  string = string.slice(1);
-                }
-                if (string.length === 3) {
-                  return `\x1b[${isBg ? 48 : 38};2;${parseInt(
-                    string[0].repeat(2),
-                    16,
-                  )};${parseInt(string[1].repeat(2), 16)};${parseInt(
-                    string[2].repeat(2),
-                    16,
-                  )}m`;
-                }
-                return `\x1b[${isBg ? 48 : 38};2;${parseInt(
-                  string.slice(0, 2),
-                  16,
-                )};${parseInt(string.slice(2, 4), 16)};${parseInt(
-                  string.slice(4, 6),
-                  16,
-                )}m`;
-              }
-
-              function parseStyle(string) {
-                if (!string) {
-                  return "";
-                }
-                var output = "";
-                for (var i in string) {
-                  var digit = { B: 1, I: 3, U: 4 }[storage.$printstyle[i]];
-                  if (digit) {
-                    output += `\x1b[${digit}m`;
-                  }
-                }
-                return output;
-              }
-
-              console.log(
-                parseColor(storage.$printfg) +
-                  parseColor(storage.$printbg, true) +
-                  parseStyle(storage.$printstyle) +
-                  value +
-                  "\x1b[0m",
-              );
-            }
+            printLine(args);
           }
           break;
 
@@ -662,7 +614,6 @@ function formatFile(file) {
         inQuote = !inQuote;
       } else if (
         (program[i].full[j] === ";" ||
-          program[i].full[j] === "?" ||
           program[i].full.slice(j, j + 2) === "::") &&
         !inQuote
       ) {
@@ -734,10 +685,18 @@ function parseValue(raw, allowPlain) {
 
   if (raw.startsWith("$")) {
     var name = raw.slice(1).split(":")[0];
-    if (!Object.keys(storage).includes(name)) {
-      error("Unknown variable", raw);
+    var value;
+    if (name[0] === "$" && !isNaN(parseInt(name.slice(1)))) {
+      value = process.argv[parseInt(name.slice(1)) + 3];
+      if (value === undefined) {
+        value = null;
+      }
+    } else {
+      if (!Object.keys(storage).includes(name)) {
+        error("Unknown variable", raw);
+      }
+      value = storage[name];
     }
-    var value = storage[name];
     if (raw.includes(":")) {
       var index = raw.split(":")[1];
 
@@ -805,7 +764,7 @@ function parseValue(raw, allowPlain) {
       error("Unclosed string", raw);
     }
     var str = raw.slice(1, -1);
-    var replace = { "~n": "\n", "~~": "~", "~x1b": "\x1b" };
+    var replace = { "~n": "\n", "~x1b": "\x1b", "~~": "~" };
     for (var i in replace) {
       str = str.split(i).join(replace[i]);
     }
@@ -836,22 +795,106 @@ function parseValue(raw, allowPlain) {
   error("Unknown value type", raw);
 }
 
+// Parse color as terminal code
+function parseColor(string, isBg) {
+  if (!string) {
+    return "";
+  }
+  if (string.startsWith("#")) {
+    string = string.slice(1);
+  }
+  if (string.length === 3) {
+    return `\x1b[${isBg ? 48 : 38};2;${parseInt(
+      string[0].repeat(2),
+      16,
+    )};${parseInt(string[1].repeat(2), 16)};${parseInt(
+      string[2].repeat(2),
+      16,
+    )}m`;
+  }
+  return `\x1b[${isBg ? 48 : 38};2;${parseInt(
+    string.slice(0, 2),
+    16,
+  )};${parseInt(string.slice(2, 4), 16)};${parseInt(string.slice(4, 6), 16)}m`;
+}
+
+// Parse style information as terminal code
+function parseStyle(string) {
+  if (!string) {
+    return "";
+  }
+  var output = "";
+  for (var i in string) {
+    var digit = { B: 1, I: 3, U: 4 }[storage.$printstyle[i]];
+    if (digit) {
+      output += `\x1b[${digit}m`;
+    }
+  }
+  return output;
+}
+
 // Print arguments to console
-function printLine(args) {}
+function printLine(args) {
+  if (args.length >= 1) {
+    var value =
+      args.length === 1
+        ? printValue(args[0])
+        : args.map(i => printValue(i)).join("");
+
+    console.log(
+      parseColor(storage.$printfg) +
+        parseColor(storage.$printbg, true) +
+        parseStyle(storage.$printstyle) +
+        value +
+        "\x1b[0m",
+    );
+  }
+}
 
 // Return printable value
-function printValue(value) {
-  value = parseValue(value);
+function printValue(value, iteration) {
+  if (!iteration) {
+    value = parseValue(value);
+  }
+
+  if (value instanceof Array) {
+    value = value
+      .map(
+        i =>
+          "  ".repeat((iteration || 0) + 1) +
+          printValue(i, (iteration || 0) + 1),
+      )
+      .join("\n");
+
+    return (
+      "\x1b[38;2;80;80;80m[\x1b[0m\n" +
+      value +
+      "\n" +
+      "  ".repeat(iteration || 0) +
+      "\x1b[38;2;80;80;80m]\x1b[0m"
+    );
+  }
 
   if (value === null) {
-    return "NUL";
+    return "\x1b[1mNUL\x1b[0m";
   }
   if (value === true) {
-    return "TRU";
+    return "\x1b[1mTRU\x1b[0m";
   }
   if (value === false) {
-    return "FLS";
+    return "\x1b[1mFLS\x1b[0m";
   }
+  if (typeof value === "number") {
+    return `\x1b[38;2;255;200;80m${value}\x1b[0m`;
+  }
+
+  if (iteration && typeof value === "string") {
+    var replace = { "\n": "~n", "\x1b": "~x1b", "~": "~~" };
+    for (var i in replace) {
+      value = value.split(i).join(replace[i]);
+    }
+  }
+
   return value;
 }
 
@@ -1015,13 +1058,6 @@ function minify(filename) {
     output.push(minified[i].join(" "));
   }
   output = output.join(";");
-
-  var replace = {
-    ";?": "?",
-  };
-  for (var i in replace) {
-    output = output.split(i).join(replace[i]);
-  }
 
   fs.writeFileSync(
     filename.split(".").slice(0, -1).join(".") +

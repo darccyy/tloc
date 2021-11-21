@@ -3,3 +3,4 @@ temp
 output.*
 *.min.*
 key.txt
+*.dev.js
