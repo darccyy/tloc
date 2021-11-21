@@ -1,0 +1,43 @@
+Print "Standard"
+Set $printstyle "B"
+Print "Bold"
+Set $printstyle "BIU"
+Print "Bold, Italic, Underline"
+Set $printstyle NUL
+Set $printfg "#FF0"
+Print "Yellow"
+Set $printfg "#FF0"
+Set $printstyle "B"
+Print "Yellow, Bold"
+Set $printstyle "B"
+Set $printfg "#FF0"
+Set $printbg "#0000FF"
+Print "Yellow, Bold, Blue"
+Set $printfg NUL
+Set $printbg NUL
+Set $printstyle NUL
+Print "Standard"
+Set $printfg "#FF0"
+Set $printstyle "BIU"
+Print "Yellow, Bold, Italic, Underline"
+Set $printfg "#FFFF00"
+Set $printbg "#F00"
+Set $printstyle "BIU"
+Print "Yellow, Bold, Italic, Underline, Red"
+Set $printbg NUl
+Set color "#0F0"
+Set style "U"
+Set $printfg $color
+Set $printstyle $style
+Print "Green, Underline"
+Set $printfg "#F00"
+Set $printstyle $style
+Print "Red, Underline"
+Set $printstyle NUL
+Set $printfg "#FFFF00"
+Set $printbg "#0000FF"
+Print "Yellow, Bold, Blue"
+Set $printbg NUL
+Set $printfg NUL
+Set $printstyle "B"
+Print "Bold"

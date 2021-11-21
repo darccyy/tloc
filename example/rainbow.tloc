@@ -1,0 +1,88 @@
+Set screen ""
+
+Div $$width 2
+Sub $$ 1 >> w
+Div $w 2 >> h
+
+Set y 0
+Label y
+  If $y > 0
+    Con $screen "~n" >> screen
+  End
+
+  Set x 0
+  Label x
+
+    Div 36 $w >> size
+
+    Div $w 2
+    Sub $x $$
+    Mul $$ $size
+    Pow $$ 2 >> a
+
+    Div $w 2
+    Sub $y $$
+    Mul $$ $size
+    Pow $$ 2 >> b
+    Add $a $b >> hue
+    Sub $hue 30 >> hue
+
+    If $hue <= 255
+      If $hue > 0
+        Div $hue 60
+        Mod $$ 2
+        Sub $$ 1
+        If $$ < 0
+          Sub 0 $$
+        End
+        Sub 1 $$ >> n
+
+        Set m 0
+
+        If $hue < 60
+          Array rgb 1 $n 0 Close
+        Elseif $hue < 120
+          Array rgb $n 1 0 Close
+        Elseif $hue < 180
+          Array rgb 0 1 $n Close
+        Elseif $hue < 240
+          Array rgb 0 $n 1 Close
+        Elseif $hue < 300
+          Array rgb $n 0 1 Close
+        Else
+          Array rgb 1 0 $n Close
+        End
+
+        Set code "~x1b[38;2;"
+        Add $rgb:0 $m
+        Mul $$ 255
+        Rnd $$
+        Con $code $$ >> code
+        Con $code ";" >> code
+        Add $rgb:1 $m
+        Mul $$ 255
+        Rnd $$
+        Con $code $$ >> code
+        Con $code ";" >> code
+        Add $rgb:2 $m
+        Mul $$ 255
+        Rnd $$
+        Con $code $$ >> code
+        Con $code "m" >> code
+
+        Con $screen $code >> screen
+        Con $screen "██" >> screen
+
+      Else
+        Con $screen "  " >> screen
+      End
+    Else
+      Con $screen "  " >> screen
+    End
+
+    Add $x 1 >> x
+    If $x < $w; Goto x
+  Add $y 1 >> y
+  If $y < $h; Goto y
+
+Print $screen "~n"

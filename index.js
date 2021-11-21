@@ -13,6 +13,10 @@ var storage = {
   get $height() {
     return process.stdout.rows;
   },
+  $keymode: null,
+  $printfg: null,
+  $printbg: null,
+  $printstyle: null,
 };
 var full = -1;
 var goLine = null;
@@ -195,7 +199,59 @@ async function main() {
       switch (cmd) {
         case "PRINT": // Print text to terminal
           {
-            console.log(printLine(args));
+            if (args.length >= 1) {
+              var value =
+                args.length === 1
+                  ? printValue(args[0])
+                  : args.map(printValue).join("");
+
+              function parseColor(string, isBg) {
+                if (!string) {
+                  return "";
+                }
+                if (string.startsWith("#")) {
+                  string = string.slice(1);
+                }
+                if (string.length === 3) {
+                  return `\x1b[${isBg ? 48 : 38};2;${parseInt(
+                    string[0].repeat(2),
+                    16,
+                  )};${parseInt(string[1].repeat(2), 16)};${parseInt(
+                    string[2].repeat(2),
+                    16,
+                  )}m`;
+                }
+                return `\x1b[${isBg ? 48 : 38};2;${parseInt(
+                  string.slice(0, 2),
+                  16,
+                )};${parseInt(string.slice(2, 4), 16)};${parseInt(
+                  string.slice(4, 6),
+                  16,
+                )}m`;
+              }
+
+              function parseStyle(string) {
+                if (!string) {
+                  return "";
+                }
+                var output = "";
+                for (var i in string) {
+                  var digit = { B: 1, I: 3, U: 4 }[storage.$printstyle[i]];
+                  if (digit) {
+                    output += `\x1b[${digit}m`;
+                  }
+                }
+                return output;
+              }
+
+              console.log(
+                parseColor(storage.$printfg) +
+                  parseColor(storage.$printbg, true) +
+                  parseStyle(storage.$printstyle) +
+                  value +
+                  "\x1b[0m",
+              );
+            }
           }
           break;
 
@@ -320,7 +376,7 @@ async function main() {
         case "END": // Close if statement
           {
             if (storage.$if.length <= 0) {
-              error("Cannot use 'END' without IF statement", cmd);
+              error("Cannot use 'END' without IF statement", rawCmd);
             }
             storage.$if = storage.$if.slice(0, -1);
           }
@@ -378,6 +434,12 @@ async function main() {
           {
             var a = parseValue(args[0]);
             var b = parseValue(args[1]);
+            if (typeof a === "number") {
+              a = a.toString();
+            }
+            if (typeof b === "number") {
+              b = b.toString();
+            }
             if (typeof a !== "string") {
               error("Cannot concatenate non-string values", a);
             }
@@ -455,13 +517,17 @@ async function main() {
 
         case "HALT": // Sleep for time in milliseconds
           {
-            var value = parseValue(args[0]);
-            if (typeof value !== "number") {
-              error("Cannot halt program for non-number time", args[1]);
+            if (args[0]) {
+              var value = parseValue(args[0]);
+              if (typeof value !== "number") {
+                error("Cannot halt program for non-number time", args[1]);
+              }
+              await new Promise(resolve => {
+                setTimeout(resolve, value);
+              });
+            } else {
+              process.stdin.resume();
             }
-            await new Promise(resolve => {
-              setTimeout(resolve, value);
-            });
           }
           break;
 
@@ -739,7 +805,7 @@ function parseValue(raw, allowPlain) {
       error("Unclosed string", raw);
     }
     var str = raw.slice(1, -1);
-    var replace = { "~n": "\n", "~~": "~" };
+    var replace = { "~n": "\n", "~~": "~", "~x1b": "\x1b" };
     for (var i in replace) {
       str = str.split(i).join(replace[i]);
     }
@@ -771,15 +837,7 @@ function parseValue(raw, allowPlain) {
 }
 
 // Print arguments to console
-function printLine(args) {
-  if (args.length < 1) {
-    return;
-  }
-  if (args.length === 1) {
-    return printValue(args[0]);
-  }
-  return args.map(printValue).join("");
-}
+function printLine(args) {}
 
 // Return printable value
 function printValue(value) {

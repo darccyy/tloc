@@ -1,0 +1,68 @@
+Set h 171
+Set s 0.87
+Set v 0.7
+
+Mul $s $v >> c
+
+Div $h 60
+Mod $$ 2
+Sub $$ 1
+If $$ < 0
+  Sub 0 $$
+End
+Sub 1 $$
+Mul $c $$ >> x
+
+Sub $v $c >> m
+
+If $h < 60
+  Array rgb $c $x 0 Close
+Elseif $h < 120
+  Array rgb $x $c 0 Close
+Elseif $h < 180
+  Array rgb 0 $c $x Close
+Elseif $h < 240
+  Array rgb 0 $x $c Close
+Elseif $h < 300
+  Array rgb $x 0 $c Close
+Else
+  Array rgb $c 0 $x Close
+End
+
+Add $rgb:0 $m
+Mul $$ 255
+Rnd $$ >> r
+Add $rgb:1 $m
+Mul $$ 255
+Rnd $$ >> g
+Add $rgb:2 $m
+Mul $$ 255
+Rnd $$ >> b
+
+Print $r " " $g " " $b
+
+Set hexChars "0123456789ABCDEF"
+Set hex "#"
+
+Div $r 16
+Rnd $$
+Con $hex $hexChars:$$ >> hex
+Mod $r 16
+Rnd $$
+Con $hex $hexChars:$$ >> hex
+
+Div $g 16
+Rnd $$
+Con $hex $hexChars:$$ >> hex
+Mod $g 16
+Rnd $$
+Con $hex $hexChars:$$ >> hex
+
+Div $b 16
+Rnd $$
+Con $hex $hexChars:$$ >> hex
+Mod $b 16
+Rnd $$
+Con $hex $hexChars:$$ >> hex
+
+Print $hex

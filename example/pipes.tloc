@@ -21,8 +21,72 @@ Label i
 
 Set prevScreen NUL
 Set prevDir 1
+Set hue 0
 
 Label render
+  Add $hue 10
+  Mod $$ 360 >> hue
+
+  Div $hue 60
+  Mod $$ 2
+  Sub $$ 1
+  If $$ < 0
+    Sub 0 $$
+  End
+  Sub 1 $$ >> x
+
+  Set m 0
+
+  If $hue < 60
+    Array rgb 1 $x 0 Close
+  Elseif $hue < 120
+    Array rgb $x 1 0 Close
+  Elseif $hue < 180
+    Array rgb 0 1 $x Close
+  Elseif $hue < 240
+    Array rgb 0 $x 1 Close
+  Elseif $hue < 300
+    Array rgb $x 0 1 Close
+  Else
+    Array rgb 1 0 $x Close
+  End
+
+  Add $rgb:0 $m
+  Mul $$ 255
+  Rnd $$ >> r
+  Add $rgb:1 $m
+  Mul $$ 255
+  Rnd $$ >> g
+  Add $rgb:2 $m
+  Mul $$ 255
+  Rnd $$ >> b
+
+  Set hexChars "0123456789ABCDEF"
+  Set hex "#"
+
+  Div $r 16
+  Flr $$
+  Con $hex $hexChars:$$ >> hex
+  Mod $r 16
+  Flr $$
+  Con $hex $hexChars:$$ >> hex
+
+  Div $g 16
+  Flr $$
+  Con $hex $hexChars:$$ >> hex
+  Mod $g 16
+  Flr $$
+  Con $hex $hexChars:$$ >> hex
+
+  Div $b 16
+  Flr $$
+  Con $hex $hexChars:$$ >> hex
+  Mod $b 16
+  Flr $$
+  Con $hex $hexChars:$$ >> hex
+
+  Set $printfg $hex
+  
   Set printScreen ""
   Set y 0
   Label y
@@ -80,7 +144,6 @@ Label render
   Add $pos 1
   Con $temp $screen:$$~ >> screen
   Set prevDir $dir
-  Len $screen
 
   If $dir = 0
     Sub $cy 1 >> cy
