@@ -1,7 +1,8 @@
 Set chars "━┃┓┏┛┗"
+:: Set chars "─│╮╭╯╰"
 Set background " "
 Set colorSpeed 0.2
-Set length 100000
+Set length 10000
 Set blackBg FLS
 Array canvas $$width $$height Close
 Div $canvas:0 2

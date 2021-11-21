@@ -1,9 +1,13 @@
-Print "this is a string"
-Print NUL
-Print TRU
-Print 123
-Print "string " NUL " " 123
-Array a 1 2 3 "abc" "def" Close
+Array a
+  1
+  2
+  3
+  "abc"
+  "def"
+  TRU
+  NUL
+  FLS
+  "THIS IS A STRING"
+Close
+
 Print $a
-Array b 1 2 "abc" $a TRU $a "line>~n<" 123 Close
-Print $b
