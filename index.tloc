@@ -1,13 +1,11 @@
-Array a
-  1
-  2
-  3
-  "abc"
-  "def"
-  TRU
-  NUL
-  FLS
-  "THIS IS A STRING"
-Close
+Add 2 3 >> a::1
+Print $a
 
+Add 3 40>>a::1
+Print $a
+
+Con "a" "B" >> a::1
+Print $a
+
+Con "a" "B">>a::1
 Print $a

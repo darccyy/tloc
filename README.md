@@ -37,6 +37,10 @@ Arguments seperated with space.
 
 # To Do
 
+- [ ] Add live output file for if scope, storage, current command, ect.
+
+## Completed
+
 - [x] Add process variables to get size of terminal
 - [x] Add better printing (TRU, FLS, NUL, Arrays)
 - [x] Fix error arguments

@@ -1,0 +1,201 @@
+:: Read file and split at linebreak
+Array words Close
+Read "words.txt" >> file
+
+Set wins 0
+Set losses 0
+
+Set current ""
+Set i 0
+Label i
+  If $file:$i = "~n"
+    Set temp $current
+    Set current ""
+    If $temp != ""
+      Give $words $temp
+    End
+  Else
+    Con $current $file:$i >> current
+  End
+
+  Add $i 1 >> i
+  Len $file
+  If $i < $$; Goto i
+
+If $current != ""
+  Give $words $current
+End
+
+Label game
+  Print "~n -===============- "
+
+  :: Get random word
+  Len $words >> len
+  Log $len 2
+  Cel $$ >> log
+  Label random
+    Set num 0
+    Set i 0
+
+    Label digits
+      Set digit 0
+      Rand
+      If $$ = 1
+        Set digit 1
+      End
+      Sub $log $i
+      Sub $$ 1
+      Pow 2 $$
+      Mul $digit $$
+      Add $num $$ >> num
+
+      Add $i 1 >> i
+      If $i < $log; Goto digits
+
+    If $num >= $len; Goto random
+
+  :: Start game
+  Set word $words:$num
+  If $word = NUL; Goto game
+  Set correct ""
+  Set wrong ""
+  Set attempts 6
+
+  Label frame
+    Clear
+
+    :: Generate visible word
+    Set display ""
+    Set i 0
+    Label i
+      Set char "_"
+      
+      Set j 0
+      Label j
+        If $word:$i = $correct:$j
+          Set char $word:$i
+        End
+        
+        Add $j 1 >> j
+        Len $correct
+        If $j < $$; Goto j
+
+      Con $display $char >> display
+      
+      Add $i 1 >> i
+      Len $word
+      If $i < $$; Goto i
+
+    If $display = $word :: Check for win
+      Add $wins 1 >> wins
+      Goto game
+
+    Print "Hangman!~nWins: " $wins " | Losses: " $losses "~n"
+
+    Print "  -----|    "
+    Set empty "  |         "
+    If $attempts = 6
+      Print $empty "~n" $empty "~n" $empty
+    Elseif $attempts = 5
+      Print "  |    O    ~n" $empty "~n" $empty
+    Elseif $attempts = 4
+      Print "  |    O    ~n  |    |    ~n" $empty
+    Elseif $attempts = 3
+      Print "  |    O    ~n  |   /|    ~n" $empty
+    Elseif $attempts = 2
+      Print "  |    O    ~n  |   /|\   ~n" $empty
+    Elseif $attempts = 1
+      Print "  |    O    ~n  |   /|\   ~n  |   /     "
+    End
+    Print "  |_________~n"
+
+    If $wrong = ""
+      Print "No Incorrect Guesses"
+      Goto afterWrong
+
+    Set temp ""
+    Set i 0
+    Label i
+      Con $temp $wrong:$i >> temp
+      Len $wrong
+      Sub $$ 1
+      If $i < $$
+        Con $temp ", " >> temp
+      End
+
+      Add $i 1 >> i
+      Len $wrong
+      If $i < $$; Goto i
+
+    Print "Incorrect Guesses: " $temp
+    Label afterWrong
+
+    If $correct = ""
+      Print "No Correct Guesses"
+      Goto afterCorrect
+
+    Set temp ""
+    Set i 0
+    Label i
+      Con $temp $correct:$i >> temp
+      Len $correct
+      Sub $$ 1
+      If $i < $$
+        Con $temp ", " >> temp
+      End
+
+      Add $i 1 >> i
+      Len $correct
+      If $i < $$; Goto i
+
+    Print "Correct Guesses: " $temp
+    Label afterCorrect
+
+    Print "Attempts left: " $attempts "~n" $display
+
+    Input "Guess: " >> guess
+    If $guess = ""
+      Goto frame
+    Set guess $guess:0
+    
+    :: Add correct guess to memory
+    Set i 0
+    Label i
+      If $word:$i = $guess
+        Goto addCorrect
+      
+      Add $i 1 >> i
+      Len $word
+      If $i < $$; Goto i
+   
+    Set j 0
+    Label j
+      If $wrong:$j = $guess
+        Goto afterLoop
+
+      Add $j 1 >> j
+      Len $wrong
+      If $j < $$; Goto j
+
+    Con $wrong $guess >> wrong
+    Sub $attempts 1 >> attempts
+    Label afterLoop
+
+    If $attempts <= 0 :: Check for loss
+      Add $losses 1 >> losses
+      Goto game
+
+    Goto frame :: Next frame of game
+
+    Label addCorrect
+      Set j 0
+      Label j
+        If $correct:$j = $guess
+          Goto afterLoop
+
+        Add $j 1 >> j
+        Len $correct
+        If $j < $$; Goto j
+      
+      Con $correct $guess >> correct
+      Goto afterLoop

@@ -89,7 +89,7 @@ async function main() {
   if (!fs.existsSync(filename)) {
     error("File not exist");
   }
-  storage.$dir = filename;
+  storage.$dir = filename.split("\\").join("/");
 
   // Read file
   const file = fs.readFileSync(filename).toString().split("\r\n").join("\n");
@@ -154,7 +154,7 @@ async function main() {
         continue Line;
       }
       if (
-        args[0] === "::" ||
+        args[0].startsWith("::") ||
         ((storage.$if.includes("0") || storage.$if.includes("E")) &&
           !["IF", "ELSEIF", "ELSE", "END"].includes(args[0].toUpperCase()))
       ) {
@@ -423,8 +423,10 @@ async function main() {
               } else if (!filename.startsWith("/")) {
                 filename = "/" + filename;
               }
-              filename = storage.$dir + filename;
+              filename =
+                storage.$dir.split("/").slice(0, -1).join("/") + filename;
             }
+
             if (!fs.existsSync(filename)) {
               error("File not exist", args[0]);
             }
@@ -448,7 +450,8 @@ async function main() {
               } else if (!filename.startsWith("/")) {
                 filename = "/" + filename;
               }
-              filename = storage.$dir + filename;
+              filename =
+                storage.$dir.split("/").slice(0, -1).join("/") + filename;
             }
 
             var value = parseValue(args[1]);
@@ -558,6 +561,9 @@ function error(str, data) {
     while (fullLine.startsWith(" ")) {
       fullLine = fullLine.slice(1);
     }
+    if (fullLine.length > 70) {
+      fullLine = fullLine.slice(0, 70) + "...";
+    }
     if (!data) {
       console.error(
         `\n! ERROR\n    ${str}\n    At Line ${full + 1}\n        ${fullLine}\n`,
@@ -623,12 +629,7 @@ function formatFile(file) {
         if (current) {
           program[i].lines.push({ line: current });
         }
-        current =
-          program[i].full[j] === "?"
-            ? "?"
-            : program[i].full.slice(j, j + 2) === "::"
-            ? ":"
-            : "";
+        current = program[i].full.slice(j, j + 2) === "::" ? ":" : "";
         continue;
       }
       current += program[i].full[j];
@@ -646,15 +647,34 @@ function formatFile(file) {
 
       var current = "";
       var inQuote = false;
-      for (var k in line) {
+      for (var k = 0; k < line.length; k++) {
         if (line[k] === '"') {
           inQuote = !inQuote;
-        } else if (line[k] === " " && !inQuote) {
+        }
+        if (
+          (line[k] === " " ||
+            line.slice(k + 1, k + 3) === ">>" ||
+            line.slice(k - 1, k + 1) === ">>") &&
+          !inQuote
+        ) {
+          if (line.slice(k + 1, k + 3) === ">>" && line[k] !== " ") {
+            current += line[k];
+          }
+          if (line.slice(k - 1, k + 1) === ">>") {
+            current += ">";
+          }
           while (current.startsWith(" ")) {
             current = current.slice(1);
           }
           if (current) {
-            program[i].lines[j].args.push(current);
+            if (current.startsWith("::")) {
+              program[i].lines[j].args.push("::");
+              if (current.slice(2)) {
+                program[i].lines[j].args.push(current.slice(2));
+              }
+            } else {
+              program[i].lines[j].args.push(current);
+            }
           }
           current = "";
           continue;
@@ -665,7 +685,14 @@ function formatFile(file) {
         current = current.slice(1);
       }
       if (current) {
-        program[i].lines[j].args.push(current);
+        if (current.startsWith("::")) {
+          program[i].lines[j].args.push("::");
+          if (current.slice(2)) {
+            program[i].lines[j].args.push(current.slice(2));
+          }
+        } else {
+          program[i].lines[j].args.push(current);
+        }
       }
     }
   }
@@ -771,14 +798,6 @@ function parseValue(raw, allowPlain) {
     return str;
   }
 
-  if (!isNaN(parseFloat(raw))) {
-    if (parseFloat(raw) % 1) {
-      return parseFloat(raw);
-    }
-
-    return parseInt(raw);
-  }
-
   if (raw.toUpperCase() === "TRU") {
     return true;
   }
@@ -791,6 +810,17 @@ function parseValue(raw, allowPlain) {
 
   if (allowPlain) {
     return Infinity;
+  }
+
+  if (
+    !isNaN(parseFloat(raw)) &&
+    /^[\+\-]?\d*\.?\d+(?:[Ee][\+\-]?\d+)?$/.test(raw)
+  ) {
+    if (parseFloat(raw) % 1) {
+      return parseFloat(raw);
+    }
+
+    return parseInt(raw);
   }
   error("Unknown value type", raw);
 }
@@ -848,6 +878,8 @@ function printLine(args) {
         value +
         "\x1b[0m",
     );
+  } else {
+    console.log();
   }
 }
 
@@ -961,7 +993,10 @@ function minify(filename) {
       continue I;
     }
     J: for (var j = 0; j < program[i].lines.length; j++) {
-      if (!program[i].lines[j] || program[i].lines[j].args[0] === "::") {
+      if (
+        !program[i].lines[j] ||
+        program[i].lines[j].args[0].startsWith("::")
+      ) {
         continue J;
       }
 
@@ -1057,7 +1092,7 @@ function minify(filename) {
   for (var i = 0; i < minified.length; i++) {
     output.push(minified[i].join(" "));
   }
-  output = output.join(";");
+  output = output.join(";").split(" >> ").join(">>");
 
   fs.writeFileSync(
     filename.split(".").slice(0, -1).join(".") +
